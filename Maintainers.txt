@@ -433,7 +433,7 @@ R: Stefan Berger <stefanb@linux.ibm.com>
 
 OvmfPkg: CSM modules
 F: OvmfPkg/Csm/
-R: David Woodhouse <dwmw2@infradead.org>
+R: David Woodhouse <dwmw2@infradead.org> [dwmw2]
 
 OvmfPkg: MptScsi and PVSCSI driver
 F: OvmfPkg/MptScsiDxe/
@@ -497,4 +497,4 @@ F: StandaloneMmPkg/
 M: Ard Biesheuvel <ard.biesheuvel@arm.com> [ardbiesheuvel]
 M: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
 M: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
-R: Supreeth Venkatesh <supreeth.venkatesh@arm.com>
+R: Supreeth Venkatesh <supreeth.venkatesh@arm.com> [supven01]
