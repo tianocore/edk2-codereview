@@ -29,7 +29,7 @@ jobs:
         Build.Targets: 'NO-TARGET'
       TARGET_MDEMODULE_DEBUG:
         Build.Pkgs: 'MdeModulePkg'
-        Build.Targets: ''
+        Build.Targets: 'NO-TARGET'
       TARGET_MDEMODULE_RELEASE:
         Build.Pkgs: 'MdeModulePkg'
         Build.Targets: 'NO-TARGET'
