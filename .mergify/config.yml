@@ -30,9 +30,6 @@ queue_rules:
       - base~=(^master|^stable/)
       - label=push
       - author=@tianocore/edk-ii-maintainers
-      - status-success=tianocore.PatchCheck
-      - status-success=Ubuntu GCC5 PR
-      - status-success=Windows VS2019 PR
 
 pull_request_rules:
   - name: Automatically merge a PR when all required checks pass and 'push' label is present
@@ -40,9 +37,6 @@ pull_request_rules:
       - base~=(^master|^stable/)
       - label=push
       - author=@tianocore/edk-ii-maintainers
-      - status-success=tianocore.PatchCheck
-      - status-success=Ubuntu GCC5 PR
-      - status-success=Windows VS2019 PR
     actions:
       queue:
         method: rebase
