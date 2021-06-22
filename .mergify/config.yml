@@ -29,14 +29,12 @@ queue_rules:
     conditions:
       - base~=(^master|^stable/)
       - label=push
-      - author=@tianocore/edk-ii-maintainers
 
 pull_request_rules:
   - name: Automatically merge a PR when all required checks pass and 'push' label is present
     conditions:
       - base~=(^master|^stable/)
       - label=push
-      - author=@tianocore/edk-ii-maintainers
     actions:
       queue:
         method: rebase
@@ -50,12 +48,3 @@ pull_request_rules:
     actions:
       comment:
         message: PR can not be merged due to conflict.  Please rebase and resubmit
-
-  - name: Automatically close a PR that fails the EDK II Maintainers membership check and 'push' label is present
-    conditions:
-      - base~=(^master|^stable/)
-      - label=push
-      - -author=@tianocore/edk-ii-maintainers
-    actions:
-      close:
-        message: PR submitter is not a member of the Tianocore EDK II Maintainers team
