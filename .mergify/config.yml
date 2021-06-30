@@ -28,16 +28,13 @@ queue_rules:
   - name: default
     conditions:
       - base~=(^main|^master|^stable/)
-      - label=push
-      - label=auto-rebase
+      - label=push-with-auto-rebase
 
 pull_request_rules:
   - name: Automatically merge a PR when all required checks pass and 'push' label is present and there is no conflict with base branch
     conditions:
       - base~=(^main|^master|^stable/)
       - label=push
-      - -conflict
-      - -label=auto-rebase
     actions:
       merge:
         strict: true
@@ -46,8 +43,7 @@ pull_request_rules:
   - name: Automatically merge a PR when all required checks pass and 'push' label is present
     conditions:
       - base~=(^main|^master|^stable/)
-      - label=push
-      - label=auto-rebase
+      - label=push-with-auto-rebase
     actions:
       queue:
         method: rebase
