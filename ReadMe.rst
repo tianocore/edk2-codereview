@@ -23,6 +23,7 @@ Platform CI Build Status
 
 Microsoft Windows VS2019
 ````````````````````````
+WORLD
 
 ============================= ================= ============= ============= ==============
  Toolchain                    CONFIG            DEBUG         RELEASE       NOOPT
