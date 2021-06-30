@@ -4,7 +4,6 @@ EDK II Project
 
 A modern, feature-rich, cross-platform firmware development
 environment for the UEFI and PI specifications from www.uefi.org.
-  WORLD
 
 Core CI Build Status
 HELLO2
