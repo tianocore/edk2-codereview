@@ -24,16 +24,35 @@
 #
 ##
 
+queue_rules:
+  - name: default
+    conditions:
+      - base~=(^main|^master|^stable/)
+      - label=push-with-auto-rebase
+      - -label=push
+
 pull_request_rules:
   - name: Automatically merge a PR when all required checks pass and 'push' label is present and there is no conflict with base branch
     conditions:
       - base~=(^main|^master|^stable/)
       - label=push
+      - -label=push-with-auto-rebase
     actions:
       merge:
         method: rebase
         strict: true
         strict_method: rebase
+
+  - name: Automatically merge a PR when all required checks pass and 'push-with-auto-rebase' label is present
+    conditions:
+      - base~=(^main|^master|^stable/)
+      - label=push-with-auto-rebase
+      - -label=push
+    actions:
+      queue:
+        method: rebase
+        rebase_fallback: none
+        name: default
 
   - name: Post a comment on a PR that can not be merged due to a merge conflict
     conditions:
