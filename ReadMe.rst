@@ -7,7 +7,6 @@ environment for the UEFI and PI specifications from www.uefi.org.
 
 Core CI Build Status
 --------------------
-HELLO
 
 ============================= ================= =============== ===================
  Host Type & Toolchain        Build Status      Test Status     Code Coverage
