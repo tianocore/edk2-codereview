@@ -20,7 +20,6 @@ Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverag
 
 Platform CI Build Status
 ------------------------
-WORLD
 
 Microsoft Windows VS2019
 ````````````````````````
