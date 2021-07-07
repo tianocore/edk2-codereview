@@ -16,7 +16,7 @@
 # * This file must be checked into the 'default' branch of a repo.  Copies
 #   of this file on other branches of a repo are ignored by Mergify.
 #
-# Copyright (c) 2019 - 2020, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2019 - 2021, Intel Corporation. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 # https://github.com/apps/mergify
@@ -28,24 +28,13 @@ queue_rules:
   - name: default
     conditions:
       - base~=(^main|^master|^stable/)
-      - label=push-with-auto-rebase
+      - label=push
 
 pull_request_rules:
-  - name: Automatically merge a PR when all required checks pass and 'push' label is present and there is no conflict with base branch
+  - name: Automatically merge a PR when all required checks pass and 'push' label is present
     conditions:
       - base~=(^main|^master|^stable/)
       - label=push
-      - -conflict
-    actions:
-      queue:
-        method: rebase
-        rebase_fallback: none
-        name: default
-
-  - name: Automatically merge a PR when all required checks pass and 'push-with-auto-rebase' label is present
-    conditions:
-      - base~=(^main|^master|^stable/)
-      - label=push-with-auto-rebase
     actions:
       queue:
         method: rebase
