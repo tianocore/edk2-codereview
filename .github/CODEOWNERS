@@ -1,6 +1,6 @@
 *              @mdkinney
-/.github/**    @mdkinney
-/.mergify/**   @makubacki
-/MdePkg/**     @miki-intel-work
+/.github/**    @miki-intel-work
+/.mergify/**   @mdkinney
+/MdePkg/**     @makubacki
 /BaseTools/**  @miki-intel-work @makubacki
 /Readme.md     @mdkinney @miki-intel-work @makubacki
