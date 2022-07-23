@@ -45,41 +45,72 @@ jobs:
             HubPullRequest = None
             LocalRepo = Git('.')
             LocalRepo.fetch('origin','${{github.event.pull_request.base.ref}}', depth=1)
-            AllReviewers = CodeOwners(LocalRepo.show('origin/${{github.event.pull_request.base.ref}}:.github/REVIEWERS'))
+            AllCodeOwners = CodeOwners(LocalRepo.show('origin/${{github.event.pull_request.base.ref}}:.github/CODEOWNERS'))
+            AllReviewers  = CodeOwners(LocalRepo.show('origin/${{github.event.pull_request.base.ref}}:.github/REVIEWERS'))
             LocalRepo.fetch('origin', '${{ github.event.pull_request.head.sha }}', depth=${{ github.event.pull_request.commits }} + 1)
             ModifiedFiles = LocalRepo.diff(
                               '${{github.event.pull_request.head.sha}}~${{ github.event.pull_request.commits }}..${{github.event.pull_request.head.sha}}',
                               '--name-only'
                               )
-            FileReviewers = set()
+            FileCodeOwners = set()
+            FileReviewers  = set()
             for File in ModifiedFiles.split():
-                print ('File:', File, AllReviewers.of(File))
-                FileReviewers |= set(AllReviewers.of(File))
-            UserReviewers = set()
-            TeamReviewers = set()
-            for FileReviewer in FileReviewers:
-                if FileReviewer[0] == 'USERNAME':
-                    UserReviewers.add (FileReviewer[1][1:])
-                elif FileReviewer[0] == 'TEAM':
-                    TeamReviewers.add (FileReviewer[1][1:])
-                elif FileReviewer[0] == 'EMAIL':
+                print ('File:', File, 'CodeOwners:', AllCodeOwners.of(File), 'Reviewers:', AllReviewers.of(File))
+                FileCodeOwners |= set(AllCodeOwners.of(File))
+                FileReviewers  |= set(AllReviewers.of(File))
+            UserCodeOwners = set()
+            TeamCodeOwners = set()
+            for Item in FileCodeOwners:
+                if Item[0] == 'USERNAME':
+                    UserCodeOwners.add (Item[1][1:])
+                elif Item[0] == 'TEAM':
+                    TeamCodeOwners.add (Item[1][1:])
+                elif Item[0] == 'EMAIL':
                     if not Hub:
                         Hub = Github('${{ secrets.GITHUB_TOKEN }}')
-                    SearchResult = Hub.search_users(FileReviewer[1] + ' in:email')
-                    print ('Search:', FileReviewer[1], [x for x in SearchResult])
+                    SearchResult = Hub.search_users(Item[1] + ' in:email')
+                    print ('Search:', Item[1], [x for x in SearchResult])
                     for User in SearchResult:
-                        if FileReviewer[1].lower() == User.email.lower():
+                        if Item[1].lower() == User.email.lower():
+                            UserCodeOwners.add (User.login)
+                            break
+            UserReviewers  = set()
+            TeamReviewers  = set()
+            for Item in FileReviewers:
+                if Item[0] == 'USERNAME':
+                    UserReviewers.add (Item[1][1:])
+                elif Item[0] == 'TEAM':
+                    TeamReviewers.add (Item[1][1:])
+                elif Item[0] == 'EMAIL':
+                    if not Hub:
+                        Hub = Github('${{ secrets.GITHUB_TOKEN }}')
+                    SearchResult = Hub.search_users(Item[1] + ' in:email')
+                    print ('Search:', Item[1], [x for x in SearchResult])
+                    for User in SearchResult:
+                        if Item[1].lower() == User.email.lower():
                             UserReviewers.add (User.login)
                             break
             Author = '${{ github.event.pull_request.user.login }}'
-            UserReviewers -= set([Author] + [x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_reviewers)}}''')])
-            TeamReviewers -= set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_teams)}}''')])
-            if UserReviewers or TeamReviewers:
-                print ('Add Reviewers User:', UserReviewers, 'Team:', TeamReviewers)
+            UserReviewers -= set([Author])
+            CurrentUserReviewers = set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_reviewers)}}''')])
+            CurrentTeamReviewers = set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_teams)}}''')])
+            AddUserReviewers = (UserReviewers - UserCodeOwners) - CurrentUserReviewers
+            AddTeamReviewers = (TeamReviewers - TeamCodeOwners) - CurrentTeamReviewers
+            RemoveUserReviewers = CurrentUserReviewers - (UserReviewers - UserCodeOwners)
+            RemoveTeamReviewers = CurrentTeamReviewers - (TeamReviewers - TeamCodeOwners)
+            if AddUserReviewers or AddTeamReviewers:
+                print ('Add Reviewers User:', AddUserReviewers, 'Team:', AddTeamReviewers)
                 if not Hub:
                     Hub = Github('${{ secrets.GITHUB_TOKEN }}')
                 HubPullRequest = Hub.get_repo('${{ github.event.repository.full_name }}').get_pull(${{ github.event.pull_request.number }})
-                HubPullRequest.create_review_request(list(UserReviewers), list(TeamReviewers))
+                HubPullRequest.create_review_request(list(AddUserReviewers), list(AddTeamReviewers))
+            if RemoveUserReviewers or RemoveTeamReviewers:
+                print ('Remove Reviewers User:', RemoveUserReviewers, 'Team:', RemoveTeamReviewers)
+                if not Hub:
+                    Hub = Github('${{ secrets.GITHUB_TOKEN }}')
+                if not HubPullRequest:
+                    HubPullRequest = Hub.get_repo('${{ github.event.repository.full_name }}').get_pull(${{ github.event.pull_request.number }})
+                HubPullRequest.delete_review_request(list(RemoveUserReviewers), list(RemoveTeamReviewers))
             if Author not in set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.assignees)}}''')]):
                 print ('Add Assignee:', Author)
                 if not Hub:
