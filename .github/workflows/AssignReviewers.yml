@@ -94,10 +94,10 @@ jobs:
             UserReviewers -= set([Author])
             CurrentUserReviewers = set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_reviewers)}}''')])
             CurrentTeamReviewers = set([x['login'] for x in json.loads ('''${{ toJSON(github.event.pull_request.requested_teams)}}''')])
-            AddUserReviewers = (UserReviewers - UserCodeOwners) - CurrentUserReviewers
-            AddTeamReviewers = (TeamReviewers - TeamCodeOwners) - CurrentTeamReviewers
-            RemoveUserReviewers = CurrentUserReviewers - (UserReviewers - UserCodeOwners)
-            RemoveTeamReviewers = CurrentTeamReviewers - (TeamReviewers - TeamCodeOwners)
+            AddUserReviewers = (UserReviewers - CurrentUserReviewers) - UserCodeOwners
+            AddTeamReviewers = (TeamReviewers - CurrentTeamReviewers) - TeamCodeOwners
+            RemoveUserReviewers = (CurrentUserReviewers - UserReviewers) - UserCodeOwners
+            RemoveTeamReviewers = (CurrentTeamReviewers - TeamReviewers) - TeamCodeOwners
             if AddUserReviewers or AddTeamReviewers:
                 print ('Add Reviewers User:', AddUserReviewers, 'Team:', AddTeamReviewers)
                 if not Hub:
