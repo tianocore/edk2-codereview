@@ -20,6 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: mdkinney/github-action-assign-reviewers
+      - uses: mdkinney/github-action-assign-reviewers@9e2f2a035126ac20b677d9f4af0b4e8001f085ee
         with:
           token: ${{secrets.GITHUB_TOKEN}}
