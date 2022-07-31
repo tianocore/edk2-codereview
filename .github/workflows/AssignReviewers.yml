@@ -18,6 +18,8 @@ jobs:
   assign_reviewers:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: mdkinney/github-action-assign-reviewers@main
         with:
