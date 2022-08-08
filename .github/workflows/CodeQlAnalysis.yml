@@ -28,10 +28,10 @@ jobs:
     # if: ${{ github.event.label.name == 'codeqltest' }}
     name: Analyze
     runs-on: ubuntu-latest
-#    permissions:
-#      actions: read
-#      contents: read
-#      security-events: write
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     strategy:
       fail-fast: false
