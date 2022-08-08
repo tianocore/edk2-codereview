@@ -71,6 +71,10 @@ F: MdePkg/
 M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 R: Miki Demeter <miki.demeter@intel.com> [miki-intel-work]
 
+MdeModulePkg/
+F: MdeModulePkg/
+M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
+
 BaseTools/
 F: BaseTools/
 M: Miki Demeter <miki.demeter@intel.com> [miki-intel-work]
