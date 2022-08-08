@@ -11,10 +11,10 @@ name: "CodeQL"
 on:
   push:
     branches:
-      - master
+      - dev/GitHubActions/main
   pull_request:
     branches:
-      - master
+      - dev/GitHubActions/main
 
     # types: [ labeled ]
   # Todo: Add this when closer to final.
