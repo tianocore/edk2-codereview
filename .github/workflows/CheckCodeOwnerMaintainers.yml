@@ -11,10 +11,11 @@
 name: Check CODEOWNERS, REVIEWERS, and Maintainers.txt files
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
-      - main
+      - 'dev/GitHubActions/main'
+      - 'dev/GitHubActions/stable/**'
     paths:
       - 'CODEOWNERS'
       - 'docs/CODEOWNERS'
@@ -47,7 +48,7 @@ jobs:
         with:
           checks: "files,duppatterns,syntax"
           experimental_checks: "notowned,avoid-shadowing"
-          github_access_token: ${{secrets.GITHUB_TOKEN}}
+          github_access_token: "${{ secrets.GITHUB_TOKEN }}"
 
   codeowners_validator_organization:
     if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'Organization'
@@ -60,7 +61,7 @@ jobs:
         with:
           checks: "files,owners,duppatterns,syntax"
           experimental_checks: "notowned,avoid-shadowing"
-          github_access_token: ${{secrets.CODEOWNERS_VALIDATOR_TOKEN}}
+          github_access_token: "${{ secrets.CODEOWNERS_VALIDATOR_TOKEN }}"
 
   reviewers_validator_user:
     if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'User'
@@ -81,7 +82,7 @@ jobs:
         with:
           checks: "files,duppatterns,syntax"
           experimental_checks: "avoid-shadowing"
-          github_access_token: ${{secrets.GITHUB_TOKEN}}
+          github_access_token: "${{ secrets.GITHUB_TOKEN }}"
 
   reviewers_validator_organization:
     if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'Organization'
@@ -100,6 +101,6 @@ jobs:
       - name: REVIEWERS Validator
         uses: mszostok/codeowners-validator@v0.7.4
         with:
-          checks: "files,duppatterns,syntax"
+          checks: "files,owners,duppatterns,syntax"
           experimental_checks: "avoid-shadowing"
-          github_access_token: ${{secrets.GITHUB_TOKEN}}
+          github_access_token: "${{ secrets.CODEOWNERS_VALIDATOR_TOKEN }}"

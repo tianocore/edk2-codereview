@@ -14,7 +14,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
-      - main
+      - 'dev/GitHubActions/main'
+      - 'dev/GitHubActions/stable/**'
     paths-ignore:
       - 'CODEOWNERS'
       - 'docs/CODEOWNERS'
