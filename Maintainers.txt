@@ -117,9 +117,23 @@ R: Chris Fernald <chris.fernald@outlook.com> [cfernald]
 
 .github/
 F: .github/
+X: .github/CODEOWNERS
+X: .github/REVIEWERS
 M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
 M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+
+.github/CODEOWNERS
+F: .github/CODEOWNERS
+M: Andrew Fish <afish@apple.com> [ajfish]
+M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+
+.github/REVIEWERS
+F: .github/REVIEWERS
+M: Andrew Fish <afish@apple.com> [ajfish]
+M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 
 .mergify/
 F: .mergify/
