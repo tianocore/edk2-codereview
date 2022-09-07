@@ -367,7 +367,9 @@ class GitDiffCheck:
                     self.filename.startswith('BaseTools/BinWrappers/PosixLike/') or \
                     self.filename.startswith('BaseTools/BinPipWrappers/PosixLike/') or \
                     self.filename.startswith('BaseTools/Bin/CYGWIN_NT-5.1-i686/') or \
-                    self.filename == 'BaseTools/BuildEnv':
+                    self.filename == 'BaseTools/BuildEnv' or \
+                    self.filename.endswith('CODEOWNERS') or \
+                    self.filename.endswith('REVIEWERS'):
                     #
                     # Do not enforce CR/LF line endings for linux shell scripts.
                     # Some linux shell scripts don't end with the ".sh" extension,
