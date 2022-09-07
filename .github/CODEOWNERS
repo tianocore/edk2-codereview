@@ -201,7 +201,6 @@
 # M: Sami Mujawar <Sami.Mujawar@arm.com> [samimujawar]
 # M: Alexei Fedorov <Alexei.Fedorov@arm.com> [AlexeiFedorov]
 /DynamicTablesPkg/**             @samimujawar @AlexeiFedorov
-/DynamicTablesPkg/**/AArch64/**  @samimujawar @AlexeiFedorov @leiflindholm @ardbiesheuvel
 /DynamicTablesPkg/**/Arm/**      @samimujawar @AlexeiFedorov @leiflindholm @ardbiesheuvel
 
 # EmbeddedPkg
@@ -474,7 +473,6 @@
 /OvmfPkg/**             @ardbiesheuvel @jyao1
 /OvmfPkg/**/AArch64/**  @ardbiesheuvel @jyao1 @leiflindholm
 /OvmfPkg/**/Arm/**      @ardbiesheuvel @jyao1 @leiflindholm
-/OvmfPkg/**/RiscV64/**  @ardbiesheuvel @jyao1 @changab
 
 #
 # OvmfPkg: bhyve-related modules
@@ -601,8 +599,6 @@
 # M: Jian J Wang <jian.j.wang@intel.com> [jwang36]
 /SecurityPkg/**             @jyao1 @jwang36
 /SecurityPkg/**/AArch64/**  @jyao1 @jwang36 @leiflindholm @ardbiesheuvel
-/SecurityPkg/**/Arm/**      @jyao1 @jwang36 @leiflindholm @ardbiesheuvel
-/SecurityPkg/**/RiscV64/**  @jyao1 @jwang36 @changab
 
 # SecurityPkg: Secure boot related modules
 # F: SecurityPkg/Library/DxeImageVerificationLib/
@@ -621,9 +617,7 @@
 # M: Ray Ni <ray.ni@intel.com> [niruiyu]
 # M: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
 /ShellPkg/**             @niruiyu @ZhichaoGao
-/ShellPkg/**/AArch64/**  @niruiyu @ZhichaoGao @leiflindholm @ardbiesheuvel
 /ShellPkg/**/Arm/**      @niruiyu @ZhichaoGao @leiflindholm @ardbiesheuvel
-/ShellPkg/**/RiscV64/**  @niruiyu @ZhichaoGao @changab
 
 # SignedCapsulePkg
 # F: SignedCapsulePkg/
@@ -646,7 +640,6 @@
 /StandaloneMmPkg/**             @ardbiesheuvel @samimujawar @jyao1
 /StandaloneMmPkg/**/AArch64/**  @ardbiesheuvel @samimujawar @jyao1 @leiflindholm
 /StandaloneMmPkg/**/Arm/**      @ardbiesheuvel @samimujawar @jyao1 @leiflindholm
-/StandaloneMmPkg/**/RiscV64/**  @ardbiesheuvel @samimujawar @jyao1 @changab
 
 # UefiCpuPkg
 # F: UefiCpuPkg/
