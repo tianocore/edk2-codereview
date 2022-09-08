@@ -53,6 +53,8 @@ Descriptions of section entries:
   level directory. (Internally, the script looks for a match called '<default>',
   so please don't add a file called that in the top-level directory.)
 
+  Add comment line.
+
 EDK II
 ------
 W: http://www.tianocore.org/edk2/
