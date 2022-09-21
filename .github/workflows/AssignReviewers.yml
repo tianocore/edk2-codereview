@@ -18,6 +18,8 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
+      actions: read
+      contents: read
       pull-requests: write
     steps:
       - name: Checkout Pull Request Target
