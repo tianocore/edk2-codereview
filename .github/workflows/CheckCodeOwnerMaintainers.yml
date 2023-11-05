@@ -1,0 +1,125 @@
+## @file
+# Check CODEOWNERS, REVIEWERS, and Maintainers.txt files.
+#
+# Only run this check if any of the files modified in the PR
+# are CODEOWNERS, REVIEWERS, or Maintainers.txt.
+#
+# This workflow uses pull_request_target to support passing in
+# github_access_token that is not available for pull_request.
+# The checkout action checks out the head of the PR.  In this
+# specific workflow, this is safe because there are no dependencies
+# on any files other that this .yml file and known external actions.
+#
+# Copyright (c) 2022, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+name: Check CODEOWNERS, REVIEWERS, and Maintainers.txt files
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'master'
+    paths:
+      - 'CODEOWNERS'
+      - 'docs/CODEOWNERS'
+      - '.github/CODEOWNERS'
+      - 'REVIEWERS'
+      - 'docs/REVIEWERS'
+      - '.github/REVIEWERS'
+      - 'Maintainers.txt'
+
+jobs:
+  check_codeowners_maintainers:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Check CODEOWNERS, REVIEWERS, and Maintainers.txt files
+        uses: mdkinney/github-action-check-codeowners-maintainers@main
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+
+  codeowners_validator_user:
+    if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'User'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: CODEOWNERS Validator
+        uses: mszostok/codeowners-validator@v0.7.4
+        with:
+          checks: "files,duppatterns,syntax"
+          experimental_checks: "notowned,avoid-shadowing"
+          github_access_token: "${{ secrets.GITHUB_TOKEN }}"
+
+  codeowners_validator_organization:
+    if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'Organization'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: CODEOWNERS Validator
+        uses: mszostok/codeowners-validator@v0.7.4
+        with:
+          checks: "files,owners,duppatterns,syntax"
+          experimental_checks: "notowned,avoid-shadowing"
+          github_app_id: ${{ secrets.APPLICATION_ID }}
+          github_app_installation_id: ${{ secrets.APPLICATION_INSTALLATION_ID }}
+          github_app_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+
+  reviewers_validator_user:
+    if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'User'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Copy REVIEWERS to CODEOWNERS
+        run: |
+          [[ -e CODEOWNERS ]]         && rm CODEOWNERS
+          [[ -e docs/CODEOWNERS ]]    && rm docs/CODEOWNERS
+          [[ -e .github/CODEOWNERS ]] && rm .github/CODEOWNERS
+          [[ -e REVIEWERS ]]          && cp REVIEWERS CODEOWNERS
+          [[ -e docs/REVIEWERS ]]     && cp docs/REVIEWERS docs/CODEOWNERS
+          [[ -e .github/REVIEWERS ]]  && cp .github/REVIEWERS .github/CODEOWNERS
+      - name: REVIEWERS Validator
+        uses: mszostok/codeowners-validator@v0.7.4
+        with:
+          checks: "files,duppatterns,syntax"
+          experimental_checks: "avoid-shadowing"
+          github_access_token: "${{ secrets.GITHUB_TOKEN }}"
+
+  reviewers_validator_organization:
+    if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'Organization'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Copy REVIEWERS to CODEOWNERS
+        run: |
+          [[ -e CODEOWNERS ]]         && rm CODEOWNERS
+          [[ -e docs/CODEOWNERS ]]    && rm docs/CODEOWNERS
+          [[ -e .github/CODEOWNERS ]] && rm .github/CODEOWNERS
+          [[ -e REVIEWERS ]]          && cp REVIEWERS CODEOWNERS
+          [[ -e docs/REVIEWERS ]]     && cp docs/REVIEWERS docs/CODEOWNERS
+          [[ -e .github/REVIEWERS ]]  && cp .github/REVIEWERS .github/CODEOWNERS
+      - name: REVIEWERS Validator
+        uses: mszostok/codeowners-validator@v0.7.4
+        with:
+          checks: "files,owners,duppatterns,syntax"
+          experimental_checks: "avoid-shadowing"
+          github_app_id: ${{ secrets.APPLICATION_ID }}
+          github_app_installation_id: ${{ secrets.APPLICATION_INSTALLATION_ID }}
+          github_app_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}

@@ -1,0 +1,39 @@
+## @file
+# Check CODEOWNERS coverage of all files in PR
+#
+# Only run this check if one or more files modified in the PR
+# are not CODEOWNERS, REVIEWERS, or Maintainers.txt.
+#
+# Copyright (c) 2022, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+name: Check CODEOWNERS coverage of all files in PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'master'
+    paths-ignore:
+      - 'CODEOWNERS'
+      - 'docs/CODEOWNERS'
+      - '.github/CODEOWNERS'
+      - 'REVIEWERS'
+      - 'docs/REVIEWERS'
+      - '.github/REVIEWERS'
+      - 'Maintainers.txt'
+
+jobs:
+  codeowners_files_validator:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Pull Request
+        uses: actions/checkout@v4
+      - name: CODEOWNERS Validator
+        uses: mszostok/codeowners-validator@v0.7.4
+        with:
+          checks: "files"
+          experimental_checks: "notowned"
+          github_access_token: ${{secrets.GITHUB_TOKEN}}
