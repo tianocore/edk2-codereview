@@ -353,7 +353,6 @@
 # F: MdeModulePkg/Universal/PlatformDriOverrideDxe/
 # F: MdeModulePkg/Universal/SecurityStubDxe/SecurityStub.c
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/MdeModulePkg/**/RiscV64/**                @andreiw
 
 # MdeModulePkg: Device and Peripheral modules
 # F: MdeModulePkg/*PciHostBridge*/
@@ -531,7 +530,6 @@
 /MdeModulePkg/Library/SmmMemoryAllocationProfileLib/**           @jiaxinwu @niruiyu
 /MdeModulePkg/Library/SmmPerformanceLib/**                       @jiaxinwu @niruiyu
 /MdeModulePkg/Library/SmmReportStatusCodeLib/**                  @jiaxinwu @niruiyu
-/MdeModulePkg/Include/*/*Smm*.h                                  @jiaxinwu @niruiyu
 /MdeModulePkg/Include/Protocol/Smm*.h                            @jiaxinwu @niruiyu
 /MdeModulePkg/Include/Ppi/Smm*.h                                 @jiaxinwu @niruiyu
 /MdeModulePkg/Include/*/*Smm*LockBox*.h                          @jiaxinwu @niruiyu
@@ -623,7 +621,7 @@
 /OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.c        @kraxel @bcran @corvink
 /OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.inf      @kraxel @bcran @corvink
 /OvmfPkg/Library/BhyveFwCtlLib/**                            @kraxel @bcran @corvink
-/OvmfPkg/Library/PciHostBridgeLibScan/**                     @kraxel @bcran @corvink @tperard
+#/OvmfPkg/Library/PciHostBridgeLibScan/**                     @kraxel @bcran @corvink
 /OvmfPkg/Library/PlatformBootManagerLibBhyve/**              @kraxel @bcran @corvink
 /OvmfPkg/Library/ResetSystemLib/BaseResetShutdownBhyve.c     @kraxel @bcran @corvink
 /OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibBhyve.inf  @kraxel @bcran @corvink
@@ -652,7 +650,6 @@
 # F: OvmfPkg/Include/Library/MemEncryptSevLib.h
 # F: OvmfPkg/IoMmuDxe/CcIoMmu.*
 # F: OvmfPkg/Library/BaseMemEncryptSevLib/
-# F: OvmfPkg/Library/PlatformBootManagerLibGrub/
 # F: OvmfPkg/Library/CcExitLib/
 # F: OvmfPkg/PlatformPei/AmdSev.c
 # F: OvmfPkg/ResetVector/
@@ -668,7 +665,6 @@
 /OvmfPkg/Include/Library/MemEncryptSevLib.h          @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 /OvmfPkg/IoMmuDxe/CcIoMmu.*                          @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 /OvmfPkg/Library/BaseMemEncryptSevLib/**             @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
-/OvmfPkg/Library/PlatformBootManagerLibGrub/**       @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 /OvmfPkg/Library/CcExitLib/**                        @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 /OvmfPkg/PlatformPei/AmdSev.c                        @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 /OvmfPkg/ResetVector/**                              @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
@@ -694,7 +690,7 @@
 # F: OvmfPkg/Tcg/
 # R: Marc-André Lureau <marcandre.lureau@redhat.com> [elmarco]
 /OvmfPkg/Include/IndustryStandard/QemuTpm.h            @kraxel @elmarco
-/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @elmarco
+#/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @elmarco
 /OvmfPkg/Library/Tcg2PhysicalPresenceLib*/**           @kraxel @elmarco
 /OvmfPkg/PlatformPei/ClearCache.c                      @kraxel @elmarco
 /OvmfPkg/Tcg/**                                        @kraxel @elmarco
@@ -734,8 +730,8 @@
 /OvmfPkg/Include/Library/XenPlatformLib.h              @kraxel @tperard
 /OvmfPkg/Include/Protocol/XenBus.h                     @kraxel @tperard
 /OvmfPkg/Include/Protocol/XenIo.h                      @kraxel @tperard
-/OvmfPkg/Library/PciHostBridgeLibScan/**               @kraxel @tperard
-/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @tperard
+#/OvmfPkg/Library/PciHostBridgeLibScan/**               @kraxel @tperard
+#/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @tperard
 /OvmfPkg/Library/XenConsoleSerialPortLib/**            @kraxel @tperard
 /OvmfPkg/Library/XenHypercallLib/**                    @kraxel @tperard
 /OvmfPkg/Library/XenIoMmioLib/**                       @kraxel @tperard
