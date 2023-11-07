@@ -857,7 +857,7 @@
 # M: James Lu <james.lu@intel.com> [jameslu8]
 # R: Gua Guo <gua.guo@intel.com> [gguo11837463]
 # S: Maintained
-/UefiPayloadPkg/**  @gguo11837463
+/UefiPalyloadPkg/**  @gguo11837463
 
 # UnitTestFrameworkPkg
 # F: UnitTestFrameworkPkg/
