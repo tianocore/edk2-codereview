@@ -128,10 +128,10 @@
 # .github/workflows/
 # F: .github/workflows/
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
-# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
-# R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
+# M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
+# R: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/.github/workflows/**  @mdkinney @makubacki
+/.github/workflows/**  @mdkinney @spbrogan
 
 # .mergify/
 # F: .mergify/
