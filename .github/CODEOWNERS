@@ -121,17 +121,13 @@
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.azurepipelines/**  @spbrogan @corthon
 
-# Tianocore Stewards must approve changes to CODEOWNERS and REVIEWERS
-/.github/CODEOWNERS   @ajfish  @leiflindholm  @mdkinney
-/.github/REVIEWERS    @ajfish  @leiflindholm  @mdkinney
-
-# .github/workflows/
-# F: .github/workflows/
+# .github/
+# F: .github/
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/.github/workflows/**  @mdkinney @makubacki
+/.github/**  @mdkinney @makubacki
 
 # .mergify/
 # F: .mergify/
