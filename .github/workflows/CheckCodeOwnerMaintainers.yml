@@ -72,9 +72,7 @@ jobs:
         with:
           checks: "files,owners,duppatterns,syntax"
           experimental_checks: "notowned,avoid-shadowing"
-          github_app_id: ${{ secrets.APPLICATION_ID }}
-          github_app_installation_id: ${{ secrets.APPLICATION_INSTALLATION_ID }}
-          github_app_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          github_access_token: "${{ secrets.CODEOWNERS_VALIDATOR_TOKEN }}"
 
   reviewers_validator_user:
     if: github.event.pull_request.draft == false && github.event.pull_request.base.user.type == 'User'
@@ -120,6 +118,4 @@ jobs:
         with:
           checks: "files,owners,duppatterns,syntax"
           experimental_checks: "avoid-shadowing"
-          github_app_id: ${{ secrets.APPLICATION_ID }}
-          github_app_installation_id: ${{ secrets.APPLICATION_INSTALLATION_ID }}
-          github_app_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+          github_access_token: "${{ secrets.CODEOWNERS_VALIDATOR_TOKEN }}"
