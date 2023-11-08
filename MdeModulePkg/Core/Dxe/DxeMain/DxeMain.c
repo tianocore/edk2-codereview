@@ -315,7 +315,7 @@ DxeMain (
   DEBUG ((
     DEBUG_INFO,
     "%a: MemoryBaseAddress=0x%Lx MemoryLength=0x%Lx\n",
-    __FUNCTION__,
+    __func__,
     MemoryBaseAddress,
     MemoryLength
     ));
@@ -762,6 +762,12 @@ CoreExitBootServices (
   )
 {
   EFI_STATUS  Status;
+
+  //
+  // Notify other drivers of their last chance to use boot services
+  // before the memory map is terminated.
+  //
+  CoreNotifySignalList (&gEfiEventBeforeExitBootServicesGuid);
 
   //
   // Disable Timer

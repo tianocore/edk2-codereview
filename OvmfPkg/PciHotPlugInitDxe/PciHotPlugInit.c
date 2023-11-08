@@ -556,6 +556,7 @@ GetResourcePadding (
   EFI_PCI_ROOT_BRIDGE_IO_PROTOCOL_PCI_ADDRESS      *Address;
   BOOLEAN                                          DefaultIo;
   BOOLEAN                                          DefaultMmio;
+  BOOLEAN                                          DefaultPrefMmio;
   RESOURCE_PADDING                                 ReservationRequest;
   EFI_ACPI_ADDRESS_SPACE_DESCRIPTOR                *FirstResource;
   EFI_STATUS                                       ReservationHintStatus;
@@ -571,7 +572,7 @@ GetResourcePadding (
   DEBUG ((
     DEBUG_VERBOSE,
     "%a: Address=%02x:%02x.%x DevicePath=%s\n",
-    __FUNCTION__,
+    __func__,
     Address->Bus,
     Address->Device,
     Address->Function,
@@ -588,8 +589,9 @@ GetResourcePadding (
     return EFI_INVALID_PARAMETER;
   }
 
-  DefaultIo   = TRUE;
-  DefaultMmio = TRUE;
+  DefaultIo       = FALSE;
+  DefaultMmio     = TRUE;
+  DefaultPrefMmio = TRUE;
 
   //
   // Init ReservationRequest, and point FirstResource one past the last
@@ -611,11 +613,11 @@ GetResourcePadding (
       DEBUG_VERBOSE,
       "%a: BusNumbers=0x%x Io=0x%Lx NonPrefetchable32BitMmio=0x%x\n"
       "%a: Prefetchable32BitMmio=0x%x Prefetchable64BitMmio=0x%Lx\n",
-      __FUNCTION__,
+      __func__,
       ReservationHint.BusNumbers,
       ReservationHint.Io,
       ReservationHint.NonPrefetchable32BitMmio,
-      __FUNCTION__,
+      __func__,
       ReservationHint.Prefetchable32BitMmio,
       ReservationHint.Prefetchable64BitMmio
       ));
@@ -722,6 +724,7 @@ GetResourcePadding (
       HighBit = HighBitSetRoundUp32 (ReservationHint.Prefetchable32BitMmio);
       if (HighBit != -1) {
         SetMmioPadding (--FirstResource, TRUE, TRUE, (UINTN)HighBit);
+        DefaultPrefMmio = FALSE;
       }
     } else if ((ReservationHint.Prefetchable64BitMmio > 0) &&
                (ReservationHint.Prefetchable64BitMmio < MAX_UINT64))
@@ -729,6 +732,7 @@ GetResourcePadding (
       HighBit = HighBitSetRoundUp64 (ReservationHint.Prefetchable64BitMmio);
       if (HighBit != -1) {
         SetMmioPadding (--FirstResource, TRUE, FALSE, (UINTN)HighBit);
+        DefaultPrefMmio = FALSE;
       }
     }
   }
@@ -737,7 +741,7 @@ GetResourcePadding (
     //
     // Request defaults.
     //
-    SetIoPadding (--FirstResource, (UINTN)HighBitSetRoundUp64 (512));
+    SetIoPadding (--FirstResource, (UINTN)HighBitSetRoundUp64 (0x1000));
   }
 
   if (DefaultMmio) {
@@ -750,6 +754,19 @@ GetResourcePadding (
       TRUE,
       (UINTN)HighBitSetRoundUp32 (SIZE_2MB)
       );
+  }
+
+  if (DefaultPrefMmio) {
+    UINT64  Pci64Size = PcdGet64 (PcdPciMmio64Size);
+
+    if (Pci64Size > SIZE_32GB) {
+      SetMmioPadding (
+        --FirstResource,
+        TRUE,
+        FALSE,
+        (UINTN)HighBitSetRoundUp64 (RShiftU64 (Pci64Size, 8))
+        );
+    }
   }
 
   //

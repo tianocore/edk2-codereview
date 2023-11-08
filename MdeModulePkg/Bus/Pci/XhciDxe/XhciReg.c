@@ -2,6 +2,7 @@
 
   The XHCI register operation routines.
 
+(C) Copyright 2023 Hewlett Packard Enterprise Development LP<BR>
 Copyright (c) 2011 - 2017, Intel Corporation. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -417,15 +418,14 @@ XhcClearOpRegBit (
   Wait the operation register's bit as specified by Bit
   to become set (or clear).
 
-  @param  Xhc                    The XHCI Instance.
-  @param  Offset                 The offset of the operation register.
-  @param  Bit                    The bit of the register to wait for.
-  @param  WaitToSet              Wait the bit to set or clear.
-  @param  Timeout                The time to wait before abort (in millisecond, ms).
+  @param  Xhc          The XHCI Instance.
+  @param  Offset       The offset of the operation register.
+  @param  Bit          The bit of the register to wait for.
+  @param  WaitToSet    Wait the bit to set or clear.
+  @param  Timeout      The time to wait before abort (in millisecond, ms).
 
-  @retval EFI_SUCCESS            The bit successfully changed by host controller.
-  @retval EFI_TIMEOUT            The time out occurred.
-  @retval EFI_OUT_OF_RESOURCES   Memory for the timer event could not be allocated.
+  @retval EFI_SUCCESS  The bit successfully changed by host controller.
+  @retval EFI_TIMEOUT  The time out occurred.
 
 **/
 EFI_STATUS
@@ -437,54 +437,34 @@ XhcWaitOpRegBit (
   IN UINT32             Timeout
   )
 {
-  EFI_STATUS  Status;
-  EFI_EVENT   TimeoutEvent;
-
-  TimeoutEvent = NULL;
+  UINT64  TimeoutTicks;
+  UINT64  ElapsedTicks;
+  UINT64  TicksDelta;
+  UINT64  CurrentTick;
 
   if (Timeout == 0) {
     return EFI_TIMEOUT;
   }
 
-  Status = gBS->CreateEvent (
-                  EVT_TIMER,
-                  TPL_CALLBACK,
-                  NULL,
-                  NULL,
-                  &TimeoutEvent
-                  );
-
-  if (EFI_ERROR (Status)) {
-    goto DONE;
-  }
-
-  Status = gBS->SetTimer (
-                  TimeoutEvent,
-                  TimerRelative,
-                  EFI_TIMER_PERIOD_MILLISECONDS (Timeout)
-                  );
-
-  if (EFI_ERROR (Status)) {
-    goto DONE;
-  }
-
+  TimeoutTicks = XhcConvertTimeToTicks (XHC_MICROSECOND_TO_NANOSECOND (Timeout * XHC_1_MILLISECOND));
+  ElapsedTicks = 0;
+  CurrentTick  = GetPerformanceCounter ();
   do {
     if (XHC_REG_BIT_IS_SET (Xhc, Offset, Bit) == WaitToSet) {
-      Status = EFI_SUCCESS;
-      goto DONE;
+      return EFI_SUCCESS;
     }
 
     gBS->Stall (XHC_1_MICROSECOND);
-  } while (EFI_ERROR (gBS->CheckEvent (TimeoutEvent)));
+    TicksDelta = XhcGetElapsedTicks (&CurrentTick);
+    // Ensure that ElapsedTicks is always incremented to avoid indefinite hangs
+    if (TicksDelta == 0) {
+      TicksDelta = XhcConvertTimeToTicks (XHC_MICROSECOND_TO_NANOSECOND (XHC_1_MICROSECOND));
+    }
 
-  Status = EFI_TIMEOUT;
+    ElapsedTicks += TicksDelta;
+  } while (ElapsedTicks < TimeoutTicks);
 
-DONE:
-  if (TimeoutEvent != NULL) {
-    gBS->CloseEvent (TimeoutEvent);
-  }
-
-  return Status;
+  return EFI_TIMEOUT;
 }
 
 /**
@@ -636,6 +616,7 @@ XhcGetSupportedProtocolCapabilityAddr (
   @param  Xhc            The XHCI Instance.
   @param  ExtCapOffset   The USB Major Version in xHCI Support Protocol Capability Field
   @param  PortSpeed      The Port Speed Field in USB PortSc register
+  @param  PortNumber     The Port Number (0-indexed)
 
   @return The Protocol Speed ID (PSI) from xHCI Supported Protocol capability register.
 
@@ -644,12 +625,15 @@ UINT32
 XhciPsivGetPsid (
   IN USB_XHCI_INSTANCE  *Xhc,
   IN UINT32             ExtCapOffset,
-  IN UINT8              PortSpeed
+  IN UINT8              PortSpeed,
+  IN UINT8              PortNumber
   )
 {
   XHC_SUPPORTED_PROTOCOL_DW2                PortId;
   XHC_SUPPORTED_PROTOCOL_PROTOCOL_SPEED_ID  Reg;
   UINT32                                    Count;
+  UINT32                                    MinPortIndex;
+  UINT32                                    MaxPortIndex;
 
   if ((Xhc == NULL) || (ExtCapOffset == 0xFFFFFFFF)) {
     return 0;
@@ -662,6 +646,23 @@ XhciPsivGetPsid (
   // 2. The PSID register boundary should be Base address + PSIC * 0x04
   //
   PortId.Dword = XhcReadExtCapReg (Xhc, ExtCapOffset + XHC_SUPPORTED_PROTOCOL_DW2_OFFSET);
+
+  //
+  // According to XHCI 1.1 spec November 2017, valid values
+  // for CompPortOffset are 1 to CompPortCount - 1.
+  //
+  // PortNumber is zero-indexed, so subtract 1.
+  //
+  if ((PortId.Data.CompPortOffset == 0) || (PortId.Data.CompPortCount == 0)) {
+    return 0;
+  }
+
+  MinPortIndex = PortId.Data.CompPortOffset - 1;
+  MaxPortIndex = MinPortIndex + PortId.Data.CompPortCount - 1;
+
+  if ((PortNumber < MinPortIndex) || (PortNumber > MaxPortIndex)) {
+    return 0;
+  }
 
   for (Count = 0; Count < PortId.Data.Psic; Count++) {
     Reg.Dword = XhcReadExtCapReg (Xhc, ExtCapOffset + XHC_SUPPORTED_PROTOCOL_PSI_OFFSET + (Count << 2));
@@ -676,8 +677,9 @@ XhciPsivGetPsid (
 /**
   Find PortSpeed value match case in XHCI Supported Protocol Capability
 
-  @param  Xhc        The XHCI Instance.
-  @param  PortSpeed  The Port Speed Field in USB PortSc register
+  @param  Xhc         The XHCI Instance.
+  @param  PortSpeed   The Port Speed Field in USB PortSc register
+  @param  PortNumber  The Port Number (0-indexed)
 
   @return The USB Port Speed.
 
@@ -685,7 +687,8 @@ XhciPsivGetPsid (
 UINT16
 XhcCheckUsbPortSpeedUsedPsic (
   IN USB_XHCI_INSTANCE  *Xhc,
-  IN UINT8              PortSpeed
+  IN UINT8              PortSpeed,
+  IN UINT8              PortNumber
   )
 {
   XHC_SUPPORTED_PROTOCOL_PROTOCOL_SPEED_ID  SpField;
@@ -703,7 +706,7 @@ XhcCheckUsbPortSpeedUsedPsic (
   // PortSpeed definition when the Major Revision is 03h.
   //
   if (Xhc->Usb3SupOffset != 0xFFFFFFFF) {
-    SpField.Dword = XhciPsivGetPsid (Xhc, Xhc->Usb3SupOffset, PortSpeed);
+    SpField.Dword = XhciPsivGetPsid (Xhc, Xhc->Usb3SupOffset, PortSpeed, PortNumber);
     if (SpField.Dword != 0) {
       //
       // Found the corresponding PORTSC value in PSIV field of USB3 offset.
@@ -717,7 +720,7 @@ XhcCheckUsbPortSpeedUsedPsic (
   // PortSpeed definition when the Major Revision is 02h.
   //
   if ((UsbSpeedIdMap == 0) && (Xhc->Usb2SupOffset != 0xFFFFFFFF)) {
-    SpField.Dword = XhciPsivGetPsid (Xhc, Xhc->Usb2SupOffset, PortSpeed);
+    SpField.Dword = XhciPsivGetPsid (Xhc, Xhc->Usb2SupOffset, PortSpeed, PortNumber);
     if (SpField.Dword != 0) {
       //
       // Found the corresponding PORTSC value in PSIV field of USB2 offset.

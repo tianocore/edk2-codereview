@@ -16,7 +16,7 @@
   LIBRARY_CLASS   = CmockaLib|HOST_APPLICATION
 
 #
-#  VALID_ARCHITECTURES           = IA32 X64 ARM AARCH64
+#  VALID_ARCHITECTURES           = IA32 X64
 #
 
 [Sources]
@@ -26,7 +26,7 @@
   UnitTestFrameworkPkg/UnitTestFrameworkPkg.dec
 
 [BuildOptions]
-  MSFT:*_*_*_CC_FLAGS     == /c -DHAVE_VSNPRINTF -DHAVE_SNPRINTF
+  MSFT:*_*_*_CC_FLAGS     == /c -DHAVE_VSNPRINTF -DHAVE_SNPRINTF /Zi
   MSFT:NOOPT_*_*_CC_FLAGS =  /Od
 
   GCC:*_*_*_CC_FLAGS     == -g -DHAVE_SIGNAL_H

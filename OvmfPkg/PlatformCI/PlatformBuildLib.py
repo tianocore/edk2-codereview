@@ -170,6 +170,7 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
         self.env.SetValue("PRODUCT_NAME", "OVMF", "Platform Hardcoded")
         self.env.SetValue("MAKE_STARTUP_NSH", "FALSE", "Default to false")
         self.env.SetValue("QEMU_HEADLESS", "FALSE", "Default to false")
+        self.env.SetValue("DISABLE_DEBUG_MACRO_CHECK", "TRUE", "Disable by default")
         return 0
 
     def PlatformPreBuild(self):
@@ -195,6 +196,7 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
         args  = "-debugcon stdio"                                           # write messages to stdio
         args += " -global isa-debugcon.iobase=0x402"                        # debug messages out thru virtual io port
         args += " -net none"                                                # turn off network
+        args += " -smp 4"
         args += f" -drive file=fat:rw:{VirtualDrive},format=raw,media=disk" # Mount disk with startup.nsh
 
         if (self.env.GetValue("QEMU_HEADLESS").upper() == "TRUE"):
@@ -202,8 +204,8 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
 
         if (self.env.GetBuildValue("SMM_REQUIRE") == "1"):
             args += " -machine q35,smm=on" #,accel=(tcg|kvm)"
+            args += " --accel tcg,thread=single"
             #args += " -m ..."
-            #args += " -smp ..."
             args += " -global driver=cfi.pflash01,property=secure,value=on"
             args += " -drive if=pflash,format=raw,unit=0,file=" + os.path.join(OutputPath_FV, "OVMF_CODE.fd") + ",readonly=on"
             args += " -drive if=pflash,format=raw,unit=1,file=" + os.path.join(OutputPath_FV, "OVMF_VARS.fd")

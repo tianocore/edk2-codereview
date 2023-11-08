@@ -23,6 +23,7 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
+  OvmfPkg/OvmfPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -36,7 +37,7 @@
   gEdkiiPlatformHasDeviceTreeGuid ## SOMETIMES_PRODUCES ## PROTOCOL
 
 [Pcd]
-  gArmVirtTokenSpaceGuid.PcdForceNoAcpi
+  gUefiOvmfPkgTokenSpaceGuid.PcdForceNoAcpi
 
 [Depex]
   gEfiVariableArchProtocolGuid

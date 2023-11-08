@@ -41,8 +41,6 @@
 
 #include "Platform.h"
 
-EFI_HOB_PLATFORM_INFO  mPlatformInfoHob = { 0 };
-
 EFI_PEI_PPI_DESCRIPTOR  mPpiBootMode[] = {
   {
     EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
@@ -75,16 +73,17 @@ MemMapInitialization (
   ASSERT_RETURN_ERROR (PcdStatus);
 }
 
+STATIC
 VOID
 NoexecDxeInitialization (
-  VOID
+  IN OUT EFI_HOB_PLATFORM_INFO  *PlatformInfoHob
   )
 {
   RETURN_STATUS  Status;
 
-  Status = PlatformNoexecDxeInitialization (&mPlatformInfoHob);
+  Status = PlatformNoexecDxeInitialization (PlatformInfoHob);
   if (!RETURN_ERROR (Status)) {
-    Status = PcdSetBoolS (PcdSetNxForStack, mPlatformInfoHob.PcdSetNxForStack);
+    Status = PcdSetBoolS (PcdSetNxForStack, PlatformInfoHob->PcdSetNxForStack);
     ASSERT_RETURN_ERROR (Status);
   }
 }
@@ -115,7 +114,7 @@ MicrovmInitialization (
 
   Status = QemuFwCfgFindFile ("etc/fdt", &FdtItem, &FdtSize);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_INFO, "%a: no etc/fdt found in fw_cfg, using dummy\n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: no etc/fdt found in fw_cfg, using dummy\n", __func__));
     FdtItem = 0;
     FdtSize = sizeof (EmptyFdt);
   }
@@ -123,7 +122,7 @@ MicrovmInitialization (
   FdtPages = EFI_SIZE_TO_PAGES (FdtSize);
   NewBase  = AllocatePages (FdtPages);
   if (NewBase == NULL) {
-    DEBUG ((DEBUG_INFO, "%a: AllocatePages failed\n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: AllocatePages failed\n", __func__));
     return;
   }
 
@@ -136,14 +135,14 @@ MicrovmInitialization (
 
   FdtHobData = BuildGuidHob (&gFdtHobGuid, sizeof (*FdtHobData));
   if (FdtHobData == NULL) {
-    DEBUG ((DEBUG_INFO, "%a: BuildGuidHob failed\n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: BuildGuidHob failed\n", __func__));
     return;
   }
 
   DEBUG ((
     DEBUG_INFO,
     "%a: fdt at 0x%x (size %d)\n",
-    __FUNCTION__,
+    __func__,
     NewBase,
     FdtSize
     ));
@@ -159,7 +158,7 @@ MiscInitializationForMicrovm (
 
   ASSERT (PlatformInfoHob->HostBridgeDevId == 0xffff);
 
-  DEBUG ((DEBUG_INFO, "%a: microvm\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "%a: microvm\n", __func__));
   //
   // Disable A20 Mask
   //
@@ -223,48 +222,21 @@ ReserveEmuVariableNvStore (
   VariableStore = (EFI_PHYSICAL_ADDRESS)(UINTN)PlatformReserveEmuVariableNvStore ();
   PcdStatus     = PcdSet64S (PcdEmuVariableNvStoreReserved, VariableStore);
 
- #ifdef SECURE_BOOT_FEATURE_ENABLED
-  PlatformInitEmuVariableNvStore ((VOID *)(UINTN)VariableStore);
- #endif
+  if (FeaturePcdGet (PcdSecureBootSupported)) {
+    // restore emulated VarStore from pristine ROM copy
+    PlatformInitEmuVariableNvStore ((VOID *)(UINTN)VariableStore);
+  }
 
   ASSERT_RETURN_ERROR (PcdStatus);
 }
 
-VOID
-S3Verification (
-  VOID
-  )
-{
- #if defined (MDE_CPU_X64)
-  if (mPlatformInfoHob.SmmSmramRequire && mPlatformInfoHob.S3Supported) {
-    DEBUG ((
-      DEBUG_ERROR,
-      "%a: S3Resume2Pei doesn't support X64 PEI + SMM yet.\n",
-      __FUNCTION__
-      ));
-    DEBUG ((
-      DEBUG_ERROR,
-      "%a: Please disable S3 on the QEMU command line (see the README),\n",
-      __FUNCTION__
-      ));
-    DEBUG ((
-      DEBUG_ERROR,
-      "%a: or build OVMF with \"OvmfPkgIa32X64.dsc\".\n",
-      __FUNCTION__
-      ));
-    ASSERT (FALSE);
-    CpuDeadLoop ();
-  }
-
- #endif
-}
-
+STATIC
 VOID
 Q35BoardVerification (
-  VOID
+  IN EFI_HOB_PLATFORM_INFO  *PlatformInfoHob
   )
 {
-  if (mPlatformInfoHob.HostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID) {
+  if (PlatformInfoHob->HostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID) {
     return;
   }
 
@@ -272,8 +244,8 @@ Q35BoardVerification (
     DEBUG_ERROR,
     "%a: no TSEG (SMRAM) on host bridge DID=0x%04x; "
     "only DID=0x%04x (Q35) is supported\n",
-    __FUNCTION__,
-    mPlatformInfoHob.HostBridgeDevId,
+    __func__,
+    PlatformInfoHob->HostBridgeDevId,
     INTEL_Q35_MCH_DEVICE_ID
     ));
   ASSERT (FALSE);
@@ -302,12 +274,18 @@ MaxCpuCountInitialization (
 /**
  * @brief Builds PlatformInfo Hob
  */
-VOID
+EFI_HOB_PLATFORM_INFO *
 BuildPlatformInfoHob (
   VOID
   )
 {
-  BuildGuidDataHob (&gUefiOvmfPkgPlatformInfoGuid, &mPlatformInfoHob, sizeof (EFI_HOB_PLATFORM_INFO));
+  EFI_HOB_PLATFORM_INFO  PlatformInfoHob;
+  EFI_HOB_GUID_TYPE      *GuidHob;
+
+  ZeroMem (&PlatformInfoHob, sizeof PlatformInfoHob);
+  BuildGuidDataHob (&gUefiOvmfPkgPlatformInfoGuid, &PlatformInfoHob, sizeof (EFI_HOB_PLATFORM_INFO));
+  GuidHob = GetFirstGuidHob (&gUefiOvmfPkgPlatformInfoGuid);
+  return (EFI_HOB_PLATFORM_INFO *)GET_GUID_HOB_DATA (GuidHob);
 }
 
 /**
@@ -326,69 +304,69 @@ InitializePlatform (
   IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 {
-  EFI_STATUS  Status;
+  EFI_HOB_PLATFORM_INFO  *PlatformInfoHob;
+  EFI_STATUS             Status;
 
   DEBUG ((DEBUG_INFO, "Platform PEIM Loaded\n"));
+  PlatformInfoHob = BuildPlatformInfoHob ();
 
-  mPlatformInfoHob.SmmSmramRequire     = FeaturePcdGet (PcdSmmSmramRequire);
-  mPlatformInfoHob.SevEsIsEnabled      = MemEncryptSevEsIsEnabled ();
-  mPlatformInfoHob.PcdPciMmio64Size    = PcdGet64 (PcdPciMmio64Size);
-  mPlatformInfoHob.DefaultMaxCpuNumber = PcdGet32 (PcdCpuMaxLogicalProcessorNumber);
+  PlatformInfoHob->SmmSmramRequire     = FeaturePcdGet (PcdSmmSmramRequire);
+  PlatformInfoHob->SevEsIsEnabled      = MemEncryptSevEsIsEnabled ();
+  PlatformInfoHob->PcdPciMmio64Size    = PcdGet64 (PcdPciMmio64Size);
+  PlatformInfoHob->DefaultMaxCpuNumber = PcdGet32 (PcdCpuMaxLogicalProcessorNumber);
 
   PlatformDebugDumpCmos ();
 
   if (QemuFwCfgS3Enabled ()) {
     DEBUG ((DEBUG_INFO, "S3 support was detected on QEMU\n"));
-    mPlatformInfoHob.S3Supported = TRUE;
+    PlatformInfoHob->S3Supported = TRUE;
     Status                       = PcdSetBoolS (PcdAcpiS3Enable, TRUE);
     ASSERT_EFI_ERROR (Status);
   }
 
-  S3Verification ();
-  BootModeInitialization (&mPlatformInfoHob);
+  BootModeInitialization (PlatformInfoHob);
 
   //
   // Query Host Bridge DID
   //
-  mPlatformInfoHob.HostBridgeDevId = PciRead16 (OVMF_HOSTBRIDGE_DID);
-  AddressWidthInitialization (&mPlatformInfoHob);
+  PlatformInfoHob->HostBridgeDevId = PciRead16 (OVMF_HOSTBRIDGE_DID);
+  AddressWidthInitialization (PlatformInfoHob);
 
-  MaxCpuCountInitialization (&mPlatformInfoHob);
+  MaxCpuCountInitialization (PlatformInfoHob);
 
-  if (mPlatformInfoHob.SmmSmramRequire) {
-    Q35BoardVerification ();
-    Q35TsegMbytesInitialization ();
-    Q35SmramAtDefaultSmbaseInitialization ();
+  if (PlatformInfoHob->SmmSmramRequire) {
+    Q35BoardVerification (PlatformInfoHob);
+    Q35TsegMbytesInitialization (PlatformInfoHob);
+    Q35SmramAtDefaultSmbaseInitialization (PlatformInfoHob);
   }
 
-  PublishPeiMemory ();
+  PublishPeiMemory (PlatformInfoHob);
 
-  PlatformQemuUc32BaseInitialization (&mPlatformInfoHob);
+  PlatformQemuUc32BaseInitialization (PlatformInfoHob);
 
-  InitializeRamRegions (&mPlatformInfoHob);
+  InitializeRamRegions (PlatformInfoHob);
 
-  if (mPlatformInfoHob.BootMode != BOOT_ON_S3_RESUME) {
-    if (!mPlatformInfoHob.SmmSmramRequire) {
+  if (PlatformInfoHob->BootMode != BOOT_ON_S3_RESUME) {
+    if (!PlatformInfoHob->SmmSmramRequire) {
       ReserveEmuVariableNvStore ();
     }
 
-    PeiFvInitialization ();
-    MemTypeInfoInitialization ();
-    MemMapInitialization (&mPlatformInfoHob);
-    NoexecDxeInitialization ();
+    PeiFvInitialization (PlatformInfoHob);
+    MemTypeInfoInitialization (PlatformInfoHob);
+    MemMapInitialization (PlatformInfoHob);
+    NoexecDxeInitialization (PlatformInfoHob);
   }
 
   InstallClearCacheCallback ();
-  AmdSevInitialize ();
-  if (mPlatformInfoHob.HostBridgeDevId == 0xffff) {
-    MiscInitializationForMicrovm (&mPlatformInfoHob);
+  AmdSevInitialize (PlatformInfoHob);
+  if (PlatformInfoHob->HostBridgeDevId == 0xffff) {
+    MiscInitializationForMicrovm (PlatformInfoHob);
   } else {
-    MiscInitialization (&mPlatformInfoHob);
+    MiscInitialization (PlatformInfoHob);
   }
 
   IntelTdxInitialize ();
-  InstallFeatureControlCallback ();
-  BuildPlatformInfoHob ();
+  InstallFeatureControlCallback (PlatformInfoHob);
 
   return EFI_SUCCESS;
 }

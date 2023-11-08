@@ -1,8 +1,9 @@
 /** @file
 Agent Module to load other modules to deploy SMM Entry Vector for X86 CPU.
 
-Copyright (c) 2009 - 2022, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2009 - 2023, Intel Corporation. All rights reserved.<BR>
 Copyright (c) 2017, AMD Incorporated. All rights reserved.<BR>
+Copyright (C) 2023 Advanced Micro Devices, Inc. All rights reserved.<BR>
 
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -25,6 +26,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Guid/AcpiS3Context.h>
 #include <Guid/MemoryAttributesTable.h>
 #include <Guid/PiSmmMemoryAttributesTable.h>
+#include <Guid/SmmBaseHob.h>
 
 #include <Library/BaseLib.h>
 #include <Library/IoLib.h>
@@ -44,12 +46,14 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/HobLib.h>
 #include <Library/LocalApicLib.h>
 #include <Library/CpuLib.h>
-#include <Library/UefiCpuLib.h>
 #include <Library/CpuExceptionHandlerLib.h>
 #include <Library/ReportStatusCodeLib.h>
 #include <Library/SmmCpuFeaturesLib.h>
 #include <Library/PeCoffGetEntryPointLib.h>
 #include <Library/RegisterCpuFeaturesLib.h>
+#include <Library/PerformanceLib.h>
+#include <Library/CpuPageTableLib.h>
+#include <Library/MmSaveStateLib.h>
 
 #include <AcpiCpuData.h>
 #include <CpuHotPlugData.h>
@@ -59,6 +63,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include "CpuService.h"
 #include "SmmProfile.h"
+#include "SmmMpPerf.h"
 
 //
 // CET definition
@@ -194,11 +199,6 @@ typedef struct {
 
 #define INVALID_APIC_ID  0xFFFFFFFFFFFFFFFFULL
 
-typedef UINT32 SMM_CPU_ARRIVAL_EXCEPTIONS;
-#define ARRIVAL_EXCEPTION_BLOCKED       0x1
-#define ARRIVAL_EXCEPTION_DELAYED       0x2
-#define ARRIVAL_EXCEPTION_SMI_DISABLED  0x4
-
 //
 // Wrapper used to convert EFI_AP_PROCEDURE2 and EFI_AP_PROCEDURE.
 //
@@ -265,11 +265,43 @@ extern UINTN                 mNumberOfCpus;
 extern EFI_SMM_CPU_PROTOCOL  mSmmCpu;
 extern EFI_MM_MP_PROTOCOL    mSmmMp;
 extern BOOLEAN               m5LevelPagingNeeded;
+extern PAGING_MODE           mPagingMode;
+extern UINTN                 mSmmShadowStackSize;
 
 ///
 /// The mode of the CPU at the time an SMI occurs
 ///
 extern UINT8  mSmmSaveStateRegisterLma;
+
+#define PAGE_TABLE_POOL_ALIGNMENT   BASE_128KB
+#define PAGE_TABLE_POOL_UNIT_SIZE   BASE_128KB
+#define PAGE_TABLE_POOL_UNIT_PAGES  EFI_SIZE_TO_PAGES (PAGE_TABLE_POOL_UNIT_SIZE)
+#define PAGE_TABLE_POOL_ALIGN_MASK  \
+  (~(EFI_PHYSICAL_ADDRESS)(PAGE_TABLE_POOL_ALIGNMENT - 1))
+
+typedef struct {
+  VOID     *NextPool;
+  UINTN    Offset;
+  UINTN    FreePages;
+} PAGE_TABLE_POOL;
+
+/**
+  Disable CET.
+**/
+VOID
+EFIAPI
+DisableCet (
+  VOID
+  );
+
+/**
+  Enable CET.
+**/
+VOID
+EFIAPI
+EnableCet (
+  VOID
+  );
 
 //
 // SMM CPU Protocol function prototypes.
@@ -324,58 +356,27 @@ SmmWriteSaveState (
   );
 
 /**
-Read a CPU Save State register on the target processor.
-
-This function abstracts the differences that whether the CPU Save State register is in the
-IA32 CPU Save State Map or X64 CPU Save State Map.
-
-This function supports reading a CPU Save State register in SMBase relocation handler.
-
-@param[in]  CpuIndex       Specifies the zero-based index of the CPU save state.
-@param[in]  RegisterIndex  Index into mSmmCpuWidthOffset[] look up table.
-@param[in]  Width          The number of bytes to read from the CPU save state.
-@param[out] Buffer         Upon return, this holds the CPU register value read from the save state.
-
-@retval EFI_SUCCESS           The register was read from Save State.
-@retval EFI_NOT_FOUND         The register is not defined for the Save State of Processor.
-@retval EFI_INVALID_PARAMETER Buffer is NULL, or Width does not meet requirement per Register type.
+  C function for SMI handler. To change all processor's SMMBase Register.
 
 **/
-EFI_STATUS
+VOID
 EFIAPI
-ReadSaveStateRegister (
-  IN UINTN                        CpuIndex,
-  IN EFI_SMM_SAVE_STATE_REGISTER  Register,
-  IN UINTN                        Width,
-  OUT VOID                        *Buffer
+SmmInitHandler (
+  VOID
   );
 
 /**
-Write value to a CPU Save State register on the target processor.
-
-This function abstracts the differences that whether the CPU Save State register is in the
-IA32 CPU Save State Map or X64 CPU Save State Map.
-
-This function supports writing a CPU Save State register in SMBase relocation handler.
-
-@param[in] CpuIndex       Specifies the zero-based index of the CPU save state.
-@param[in] RegisterIndex  Index into mSmmCpuWidthOffset[] look up table.
-@param[in] Width          The number of bytes to read from the CPU save state.
-@param[in] Buffer         Upon entry, this holds the new CPU register value.
-
-@retval EFI_SUCCESS           The register was written to Save State.
-@retval EFI_NOT_FOUND         The register is not defined for the Save State of Processor.
-@retval EFI_INVALID_PARAMETER  ProcessorIndex or Width is not correct.
+  Issue SMI IPI (All Excluding Self SMM IPI + BSP SMM IPI) to execute first SMI init.
 
 **/
-EFI_STATUS
-EFIAPI
-WriteSaveStateRegister (
-  IN UINTN                        CpuIndex,
-  IN EFI_SMM_SAVE_STATE_REGISTER  Register,
-  IN UINTN                        Width,
-  IN CONST VOID                   *Buffer
+VOID
+ExecuteFirstSmiInit (
+  VOID
   );
+
+extern BOOLEAN            mSmmRelocated;
+extern volatile  BOOLEAN  *mSmmInitialized;
+extern UINT32             mBspApicId;
 
 extern CONST UINT8        gcSmmInitTemplate[];
 extern CONST UINT16       gcSmmInitSize;
@@ -500,6 +501,21 @@ extern UINT64  mAddressEncMask;
 UINT32
 Gen4GPageTable (
   IN      BOOLEAN  Is32BitPageTable
+  );
+
+/**
+  Create page table based on input PagingMode and PhysicalAddressBits in smm.
+
+  @param[in]      PagingMode           The paging mode.
+  @param[in]      PhysicalAddressBits  The bits of physical address to map.
+
+  @retval         PageTable Address
+
+**/
+UINTN
+GenSmmPageTable (
+  IN PAGING_MODE  PagingMode,
+  IN UINT8        PhysicalAddressBits
   );
 
 /**
@@ -657,6 +673,43 @@ SmmBlockingStartupThisAp (
   IN      EFI_AP_PROCEDURE  Procedure,
   IN      UINTN             CpuIndex,
   IN OUT  VOID              *ProcArguments OPTIONAL
+  );
+
+/**
+  This function modifies the page attributes for the memory region specified by BaseAddress and
+  Length from their current attributes to the attributes specified by Attributes.
+
+  Caller should make sure BaseAddress and Length is at page boundary.
+
+  @param[in]   PageTableBase    The page table base.
+  @param[in]   BaseAddress      The physical address that is the start address of a memory region.
+  @param[in]   Length           The size in bytes of the memory region.
+  @param[in]   Attributes       The bit mask of attributes to modify for the memory region.
+  @param[in]   IsSet            TRUE means to set attributes. FALSE means to clear attributes.
+  @param[out]  IsModified       TRUE means page table modified. FALSE means page table not modified.
+
+  @retval RETURN_SUCCESS           The attributes were modified for the memory region.
+  @retval RETURN_ACCESS_DENIED     The attributes for the memory resource range specified by
+                                   BaseAddress and Length cannot be modified.
+  @retval RETURN_INVALID_PARAMETER Length is zero.
+                                   Attributes specified an illegal combination of attributes that
+                                   cannot be set together.
+  @retval RETURN_OUT_OF_RESOURCES  There are not enough system resources to modify the attributes of
+                                   the memory resource range.
+  @retval RETURN_UNSUPPORTED       The processor does not support one or more bytes of the memory
+                                   resource range specified by BaseAddress and Length.
+                                   The bit mask of attributes is not support for the memory resource
+                                   range specified by BaseAddress and Length.
+**/
+RETURN_STATUS
+ConvertMemoryPageAttributes (
+  IN  UINTN             PageTableBase,
+  IN  PAGING_MODE       PagingMode,
+  IN  PHYSICAL_ADDRESS  BaseAddress,
+  IN  UINT64            Length,
+  IN  UINT64            Attributes,
+  IN  BOOLEAN           IsSet,
+  OUT BOOLEAN           *IsModified   OPTIONAL
   );
 
 /**
@@ -960,11 +1013,10 @@ SetPageTableAttributes (
   Length from their current attributes to the attributes specified by Attributes.
 
   @param[in]   PageTableBase    The page table base.
-  @param[in]   EnablePML5Paging If PML5 paging is enabled.
+  @param[in]   PagingMode       The paging mode.
   @param[in]   BaseAddress      The physical address that is the start address of a memory region.
   @param[in]   Length           The size in bytes of the memory region.
   @param[in]   Attributes       The bit mask of attributes to set for the memory region.
-  @param[out]  IsSplitted       TRUE means page table splitted. FALSE means page table not splitted.
 
   @retval EFI_SUCCESS           The attributes were set for the memory region.
   @retval EFI_ACCESS_DENIED     The attributes for the memory resource range specified by
@@ -982,12 +1034,11 @@ SetPageTableAttributes (
 **/
 EFI_STATUS
 SmmSetMemoryAttributesEx (
-  IN  UINTN                 PageTableBase,
-  IN  BOOLEAN               EnablePML5Paging,
-  IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
-  IN  UINT64                Length,
-  IN  UINT64                Attributes,
-  OUT BOOLEAN               *IsSplitted  OPTIONAL
+  IN  UINTN             PageTableBase,
+  IN  PAGING_MODE       PagingMode,
+  IN  PHYSICAL_ADDRESS  BaseAddress,
+  IN  UINT64            Length,
+  IN  UINT64            Attributes
   );
 
 /**
@@ -995,34 +1046,32 @@ SmmSetMemoryAttributesEx (
   Length from their current attributes to the attributes specified by Attributes.
 
   @param[in]   PageTableBase    The page table base.
-  @param[in]   EnablePML5Paging If PML5 paging is enabled.
+  @param[in]   PagingMode       The paging mode.
   @param[in]   BaseAddress      The physical address that is the start address of a memory region.
   @param[in]   Length           The size in bytes of the memory region.
   @param[in]   Attributes       The bit mask of attributes to clear for the memory region.
-  @param[out]  IsSplitted       TRUE means page table splitted. FALSE means page table not splitted.
 
   @retval EFI_SUCCESS           The attributes were cleared for the memory region.
   @retval EFI_ACCESS_DENIED     The attributes for the memory resource range specified by
                                 BaseAddress and Length cannot be modified.
   @retval EFI_INVALID_PARAMETER Length is zero.
                                 Attributes specified an illegal combination of attributes that
-                                cannot be set together.
+                                cannot be cleared together.
   @retval EFI_OUT_OF_RESOURCES  There are not enough system resources to modify the attributes of
                                 the memory resource range.
   @retval EFI_UNSUPPORTED       The processor does not support one or more bytes of the memory
                                 resource range specified by BaseAddress and Length.
-                                The bit mask of attributes is not support for the memory resource
+                                The bit mask of attributes is not supported for the memory resource
                                 range specified by BaseAddress and Length.
 
 **/
 EFI_STATUS
 SmmClearMemoryAttributesEx (
   IN  UINTN                 PageTableBase,
-  IN  BOOLEAN               EnablePML5Paging,
+  IN  PAGING_MODE           PagingMode,
   IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
   IN  UINT64                Length,
-  IN  UINT64                Attributes,
-  OUT BOOLEAN               *IsSplitted  OPTIONAL
+  IN  UINT64                Attributes
   );
 
 /**
@@ -1143,22 +1192,6 @@ TransferApToSafeState (
 **/
 EFI_STATUS
 SetShadowStack (
-  IN  UINTN                 Cr3,
-  IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
-  IN  UINT64                Length
-  );
-
-/**
-  Set not present memory.
-
-  @param[in]  Cr3              The page table base address.
-  @param[in]  BaseAddress      The physical address that is the start address of a memory region.
-  @param[in]  Length           The size in bytes of the memory region.
-
-  @retval EFI_SUCCESS           The not present memory is set.
-**/
-EFI_STATUS
-SetNotPresentPage (
   IN  UINTN                 Cr3,
   IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
   IN  UINT64                Length
@@ -1463,6 +1496,17 @@ RegisterStartupProcedure (
   );
 
 /**
+  Initialize PackageBsp Info. Processor specified by mPackageFirstThreadIndex[PackageIndex]
+  will do the package-scope register programming. Set default CpuIndex to (UINT32)-1, which
+  means not specified yet.
+
+**/
+VOID
+InitPackageFirstThreadIndexInfo (
+  VOID
+  );
+
+/**
   Allocate buffer for SpinLock and Wrapper function buffer.
 
 **/
@@ -1506,6 +1550,30 @@ SmmCpuRendezvous (
 VOID
 SmmWaitForApArrival (
   VOID
+  );
+
+/**
+  Disable Write Protect on pages marked as read-only if Cr0.Bits.WP is 1.
+
+  @param[out]  WpEnabled      If Cr0.WP is enabled.
+  @param[out]  CetEnabled     If CET is enabled.
+**/
+VOID
+DisableReadOnlyPageWriteProtect (
+  OUT BOOLEAN  *WpEnabled,
+  OUT BOOLEAN  *CetEnabled
+  );
+
+/**
+  Enable Write Protect on pages marked as read-only.
+
+  @param[out]  WpEnabled      If Cr0.WP should be enabled.
+  @param[out]  CetEnabled     If CET should be enabled.
+**/
+VOID
+EnableReadOnlyPageWriteProtect (
+  BOOLEAN  WpEnabled,
+  BOOLEAN  CetEnabled
   );
 
 #endif

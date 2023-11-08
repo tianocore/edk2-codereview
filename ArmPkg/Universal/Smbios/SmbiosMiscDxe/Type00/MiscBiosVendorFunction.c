@@ -1,5 +1,6 @@
 /** @file
 
+  Copyright (c) 2022 - 2023, Ampere Computing LLC. All rights reserved.<BR>
   Copyright (c) 2021, NUVIA Inc. All rights reserved.<BR>
   Copyright (c) 2009, Intel Corporation. All rights reserved.<BR>
   Copyright (c) 2015, Hisilicon Limited. All rights reserved.<BR>
@@ -13,6 +14,7 @@
 #include <Library/DebugLib.h>
 #include <Library/HiiLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/OemMiscLib.h>
 #include <Library/PrintLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
@@ -122,22 +124,47 @@ GetBiosReleaseDate (
   return ReleaseDate;
 }
 
-/**
-  Fetches the firmware ('BIOS') version from the
-  FirmwareVersionInfo HOB.
+/**  Fetches the Firmware version string for SMBIOS type 0
 
-  @return The version as a UTF-16 string
+  This function first acquires the firmware version string from OemMiscLib;
+  if it is invalid, PcdFirmwareVersionString is used as a fallback,
+  and then sets it in SMBIOS type 0.
+
 **/
-CHAR16 *
-GetBiosVersion (
+VOID
+SetBiosVersion (
   VOID
   )
 {
-  CHAR16  *ReleaseString;
+  CHAR16         *DefaultVersionString;
+  CHAR16         *Version;
+  EFI_STRING_ID  TokenToUpdate;
 
-  ReleaseString = (CHAR16 *)FixedPcdGetPtr (PcdFirmwareVersionString);
+  DefaultVersionString = HiiGetString (
+                           mSmbiosMiscHiiHandle,
+                           STRING_TOKEN (STR_MISC_BIOS_VERSION),
+                           NULL
+                           );
 
-  return ReleaseString;
+  OemUpdateSmbiosInfo (
+    mSmbiosMiscHiiHandle,
+    STRING_TOKEN (STR_MISC_BIOS_VERSION),
+    BiosVersionType00
+    );
+
+  Version = HiiGetString (
+              mSmbiosMiscHiiHandle,
+              STRING_TOKEN (STR_MISC_BIOS_VERSION),
+              NULL
+              );
+
+  if (((StrCmp (Version, DefaultVersionString) == 0) || (StrLen (Version) == 0))) {
+    Version = (CHAR16 *)FixedPcdGetPtr (PcdFirmwareVersionString);
+    if (StrLen (Version) > 0) {
+      TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
+      HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
+    }
+  }
 }
 
 /**
@@ -158,7 +185,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
   UINTN               VendorStrLen;
   UINTN               VerStrLen;
   UINTN               DateStrLen;
-  UINTN               BiosPhysicalSize;
+  UINT64              BiosPhysicalSize;
   CHAR16              *Vendor;
   CHAR16              *Version;
   CHAR16              *ReleaseDate;
@@ -185,18 +212,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Vendor, NULL);
   }
 
-  Version = GetBiosVersion ();
-
-  if (StrLen (Version) > 0) {
-    TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
-    HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
-  } else {
-    Version = (CHAR16 *)PcdGetPtr (PcdFirmwareVersionString);
-    if (StrLen (Version) > 0) {
-      TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
-      HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
-    }
-  }
+  SetBiosVersion ();
 
   Char16String = GetBiosReleaseDate ();
   if (StrLen (Char16String) > 0) {
@@ -251,13 +267,11 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     }
   }
 
-  SmbiosRecord->SystemBiosMajorRelease = (UINT8)(PcdGet16 (PcdSystemBiosRelease) >> 8);
-  SmbiosRecord->SystemBiosMinorRelease = (UINT8)(PcdGet16 (PcdSystemBiosRelease) & 0xFF);
+  SmbiosRecord->SystemBiosMajorRelease = (UINT8)(OemGetBiosRelease () >> 8);
+  SmbiosRecord->SystemBiosMinorRelease = (UINT8)(OemGetBiosRelease () & 0xFF);
 
-  SmbiosRecord->EmbeddedControllerFirmwareMajorRelease = (UINT16)
-                                                         (PcdGet16 (PcdEmbeddedControllerFirmwareRelease) >> 8);
-  SmbiosRecord->EmbeddedControllerFirmwareMinorRelease = (UINT16)
-                                                         (PcdGet16 (PcdEmbeddedControllerFirmwareRelease) & 0xFF);
+  SmbiosRecord->EmbeddedControllerFirmwareMajorRelease = (UINT16)(OemGetEmbeddedControllerFirmwareRelease () >> 8);
+  SmbiosRecord->EmbeddedControllerFirmwareMinorRelease = (UINT16)(OemGetEmbeddedControllerFirmwareRelease () & 0xFF);
 
   OptionalStrStart = (CHAR8 *)(SmbiosRecord + 1);
   UnicodeStrToAsciiStrS (Vendor, OptionalStrStart, VendorStrLen + 1);
@@ -273,7 +287,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     DEBUG ((
       DEBUG_ERROR,
       "[%a]:[%dL] Smbios Type00 Table Log Failed! %r \n",
-      __FUNCTION__,
+      __func__,
       DEBUG_LINE_NUMBER,
       Status
       ));

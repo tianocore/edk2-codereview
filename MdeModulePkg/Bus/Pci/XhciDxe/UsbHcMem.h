@@ -48,6 +48,8 @@ typedef struct _USBHC_MEM_POOL {
 
 #define USBHC_MEM_ROUND(Len)  (((Len) + USBHC_MEM_UNIT_MASK) & (~USBHC_MEM_UNIT_MASK))
 
+#define USBHC_MEM_TRB_RINGS_BOUNDARY  SIZE_64KB
+
 //
 // Advance the byte and bit to the next bit, adjust byte accordingly.
 //
@@ -92,8 +94,9 @@ UsbHcFreeMemPool (
   Allocate some memory from the host controller's memory pool
   which can be used to communicate with host controller.
 
-  @param  Pool  The host controller's memory pool.
-  @param  Size  Size of the memory to allocate.
+  @param  Pool                 The host controller's memory pool.
+  @param  Size                 Size of the memory to allocate.
+  @param  AllocationForRing    The allocated memory is for Ring or not.
 
   @return The allocated memory or NULL.
 
@@ -101,7 +104,8 @@ UsbHcFreeMemPool (
 VOID *
 UsbHcAllocateMem (
   IN  USBHC_MEM_POOL  *Pool,
-  IN  UINTN           Size
+  IN  UINTN           Size,
+  IN  BOOLEAN         AllocationForRing
   );
 
 /**
@@ -125,6 +129,7 @@ UsbHcFreeMem (
   @param  Pool           The memory pool of the host controller.
   @param  Mem            The pointer to host memory.
   @param  Size           The size of the memory region.
+  @param  Alignment      Alignment the size to USBHC_MEM_UNIT bytes.
 
   @return                The pci memory address
 
@@ -133,7 +138,8 @@ EFI_PHYSICAL_ADDRESS
 UsbHcGetPciAddrForHostAddr (
   IN USBHC_MEM_POOL  *Pool,
   IN VOID            *Mem,
-  IN UINTN           Size
+  IN UINTN           Size,
+  IN BOOLEAN         Alignment
   );
 
 /**
@@ -142,6 +148,7 @@ UsbHcGetPciAddrForHostAddr (
   @param  Pool           The memory pool of the host controller.
   @param  Mem            The pointer to pci memory.
   @param  Size           The size of the memory region.
+  @param  Alignment      Alignment the size to USBHC_MEM_UNIT bytes.
 
   @return                The host memory address
 
@@ -150,7 +157,8 @@ EFI_PHYSICAL_ADDRESS
 UsbHcGetHostAddrForPciAddr (
   IN USBHC_MEM_POOL  *Pool,
   IN VOID            *Mem,
-  IN UINTN           Size
+  IN UINTN           Size,
+  IN BOOLEAN         Alignment
   );
 
 /**

@@ -4,12 +4,13 @@
   EFI_IMAGE_NT_HEADERS64 is for PE32+.
 
   This file is coded to the Visual Studio, Microsoft Portable Executable and
-  Common Object File Format Specification, Revision 8.3 - February 6, 2013.
+  Common Object File Format Specification, Revision 9.3 - December 29, 2015.
   This file also includes some definitions in PI Specification, Revision 1.0.
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
 Portions Copyright (c) 2016 - 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+Portions Copyright (c) 2022, Loongson Technology Corporation Limited. All rights reserved.<BR>
 
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -38,6 +39,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define IMAGE_FILE_MACHINE_RISCV32         0x5032
 #define IMAGE_FILE_MACHINE_RISCV64         0x5064
 #define IMAGE_FILE_MACHINE_RISCV128        0x5128
+#define IMAGE_FILE_MACHINE_LOONGARCH32     0x6232
+#define IMAGE_FILE_MACHINE_LOONGARCH64     0x6264
 
 //
 // EXE file formats
@@ -98,6 +101,7 @@ typedef struct {
 #define EFI_IMAGE_FILE_EXECUTABLE_IMAGE     BIT1     ///< 0x0002  File is executable  (i.e. no unresolved externel references).
 #define EFI_IMAGE_FILE_LINE_NUMS_STRIPPED   BIT2     ///< 0x0004  Line numbers stripped from file.
 #define EFI_IMAGE_FILE_LOCAL_SYMS_STRIPPED  BIT3     ///< 0x0008  Local symbols stripped from file.
+#define EFI_IMAGE_FILE_LARGE_ADDRESS_AWARE  BIT5     ///< 0x0020  Supports addresses > 2-GB
 #define EFI_IMAGE_FILE_BYTES_REVERSED_LO    BIT7     ///< 0x0080  Bytes of machine word are reversed.
 #define EFI_IMAGE_FILE_32BIT_MACHINE        BIT8     ///< 0x0100  32 bit word machine.
 #define EFI_IMAGE_FILE_DEBUG_STRIPPED       BIT9     ///< 0x0200  Debugging info stripped from file in .DBG file.
@@ -264,6 +268,21 @@ typedef struct {
 #define EFI_IMAGE_SUBSYSTEM_WINDOWS_CUI  3
 #define EFI_IMAGE_SUBSYSTEM_OS2_CUI      5
 #define EFI_IMAGE_SUBSYSTEM_POSIX_CUI    7
+
+//
+// DLL Characteristics
+//
+#define IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA        0x0020
+#define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE           0x0040
+#define IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY        0x0080
+#define IMAGE_DLLCHARACTERISTICS_NX_COMPAT              0x0100
+#define IMAGE_DLLCHARACTERISTICS_NO_ISOLATION           0x0200
+#define IMAGE_DLLCHARACTERISTICS_NO_SEH                 0x0400
+#define IMAGE_DLLCHARACTERISTICS_NO_BIND                0x0800
+#define IMAGE_DLLCHARACTERISTICS_APPCONTAINER           0x1000
+#define IMAGE_DLLCHARACTERISTICS_WDM_DRIVER             0x2000
+#define IMAGE_DLLCHARACTERISTICS_GUARD_CF               0x4000
+#define IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE  0x8000
 
 ///
 /// Length of ShortName.
@@ -503,6 +522,12 @@ typedef struct {
 #define EFI_IMAGE_REL_BASED_RISCV_LOW12I  7
 #define EFI_IMAGE_REL_BASED_RISCV_LOW12S  8
 
+//
+// Relocation types of LoongArch processor.
+//
+#define EFI_IMAGE_REL_BASED_LOONGARCH32_MARK_LA  8
+#define EFI_IMAGE_REL_BASED_LOONGARCH64_MARK_LA  8
+
 ///
 /// Line number format.
 ///
@@ -568,6 +593,13 @@ typedef struct {
   UINT32    AddressOfNameOrdinals;
 } EFI_IMAGE_EXPORT_DIRECTORY;
 
+//
+// Based export types.
+//
+#define EFI_IMAGE_EXPORT_ORDINAL_BASE  1
+#define EFI_IMAGE_EXPORT_ADDR_SIZE     4
+#define EFI_IMAGE_EXPORT_ORDINAL_SIZE  2
+
 ///
 /// Hint/Name Table.
 ///
@@ -616,7 +648,8 @@ typedef struct {
   UINT32    FileOffset;  ///< The file pointer to the debug data.
 } EFI_IMAGE_DEBUG_DIRECTORY_ENTRY;
 
-#define EFI_IMAGE_DEBUG_TYPE_CODEVIEW  2    ///< The Visual C++ debug information.
+#define EFI_IMAGE_DEBUG_TYPE_CODEVIEW               2    ///< The Visual C++ debug information.
+#define EFI_IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS  20
 
 ///
 /// Debug Data Structure defined in Microsoft C++.
@@ -659,6 +692,34 @@ typedef struct {
   //  Filename of .DLL (Mach-O with debug info) goes here
   //
 } EFI_IMAGE_DEBUG_CODEVIEW_MTOC_ENTRY;
+
+//
+// .pdata entries for X64
+//
+typedef struct {
+  UINT32    FunctionStartAddress;
+  UINT32    FunctionEndAddress;
+  UINT32    UnwindInfoAddress;
+} RUNTIME_FUNCTION;
+
+typedef struct {
+  UINT8    Version             : 3;
+  UINT8    Flags               : 5;
+  UINT8    SizeOfProlog;
+  UINT8    CountOfUnwindCodes;
+  UINT8    FrameRegister       : 4;
+  UINT8    FrameRegisterOffset : 4;
+} UNWIND_INFO;
+
+///
+/// Extended DLL Characteristics
+///
+#define EFI_IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT          0x0001
+#define EFI_IMAGE_DLLCHARACTERISTICS_EX_FORWARD_CFI_COMPAT  0x0040
+
+typedef struct {
+  UINT32    DllCharacteristicsEx;
+} EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY;
 
 ///
 /// Resource format.

@@ -36,6 +36,9 @@
 
 #include <Library/PlatformInitLib.h>
 
+#define CPUHP_BUGCHECK_OVERRIDE_FWCFG_FILE \
+  "opt/org.tianocore/X-Cpuhp-Bugcheck-Override"
+
 VOID
 EFIAPI
 PlatformAddIoMemoryBaseSizeHob (
@@ -128,7 +131,6 @@ PlatformMemMapInitialization (
 {
   UINT64  PciIoBase;
   UINT64  PciIoSize;
-  UINT32  TopOfLowRam;
   UINT64  PciExBarBase;
   UINT32  PciBase;
   UINT32  PciSize;
@@ -150,26 +152,12 @@ PlatformMemMapInitialization (
     return;
   }
 
-  TopOfLowRam  = PlatformGetSystemMemorySizeBelow4gb (PlatformInfoHob);
-  PciExBarBase = 0;
-  if (PlatformInfoHob->HostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID) {
-    //
-    // The MMCONFIG area is expected to fall between the top of low RAM and
-    // the base of the 32-bit PCI host aperture.
-    //
-    PciExBarBase = PcdGet64 (PcdPciExpressBaseAddress);
-    ASSERT (TopOfLowRam <= PciExBarBase);
-    ASSERT (PciExBarBase <= MAX_UINT32 - SIZE_256MB);
-    PciBase = (UINT32)(PciExBarBase + SIZE_256MB);
-  } else {
-    ASSERT (TopOfLowRam <= PlatformInfoHob->Uc32Base);
-    PciBase = PlatformInfoHob->Uc32Base;
-  }
-
   //
   // address       purpose   size
   // ------------  --------  -------------------------
-  // max(top, 2g)  PCI MMIO  0xFC000000 - max(top, 2g)
+  // max(top, 2g)  PCI MMIO  0xFC000000 - max(top, 2g)  (pc)
+  // max(top, 2g)  PCI MMIO  0xE0000000 - max(top, 2g)  (q35)
+  // 0xE0000000    MMCONFIG                     256 MB  (q35)
   // 0xFC000000    gap                           44 MB
   // 0xFEC00000    IO-APIC                        4 KB
   // 0xFEC01000    gap                         1020 KB
@@ -179,7 +167,23 @@ PlatformMemMapInitialization (
   // 0xFED20000    gap                          896 KB
   // 0xFEE00000    LAPIC                          1 MB
   //
-  PciSize = 0xFC000000 - PciBase;
+  PlatformGetSystemMemorySizeBelow4gb (PlatformInfoHob);
+  PciBase      = PlatformInfoHob->Uc32Base;
+  PciExBarBase = 0;
+  if (PlatformInfoHob->HostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID) {
+    //
+    // The MMCONFIG area is expected to fall between the top of low RAM and
+    // the base of the 32-bit PCI host aperture.
+    //
+    PciExBarBase = PcdGet64 (PcdPciExpressBaseAddress);
+    ASSERT (PlatformInfoHob->LowMemory <= PciExBarBase);
+    ASSERT (PciExBarBase <= MAX_UINT32 - SIZE_256MB);
+    PciSize = (UINT32)(PciExBarBase - PciBase);
+  } else {
+    ASSERT (PlatformInfoHob->LowMemory <= PlatformInfoHob->Uc32Base);
+    PciSize = 0xFC000000 - PciBase;
+  }
+
   PlatformAddIoMemoryBaseSizeHob (PciBase, PciSize);
 
   PlatformInfoHob->PcdPciMmio32Base = PciBase;
@@ -354,7 +358,7 @@ PlatformMiscInitialization (
       DEBUG ((
         DEBUG_ERROR,
         "%a: Unknown Host Bridge Device ID: 0x%04x\n",
-        __FUNCTION__,
+        __func__,
         PlatformInfoHob->HostBridgeDevId
         ));
       ASSERT (FALSE);
@@ -362,7 +366,7 @@ PlatformMiscInitialization (
   }
 
   if (PlatformInfoHob->HostBridgeDevId == CLOUDHV_DEVICE_ID) {
-    DEBUG ((DEBUG_INFO, "%a: Cloud Hypervisor is done.\n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: Cloud Hypervisor is done.\n", __func__));
     return;
   }
 
@@ -406,6 +410,142 @@ PlatformMiscInitialization (
 }
 
 /**
+  Check for various QEMU bugs concerning CPU numbers.
+
+  Compensate for those bugs if various conditions are satisfied, by updating a
+  suitable subset of the input-output parameters. The function may not return
+  (it may hang deliberately), even in RELEASE builds, if the QEMU bug is
+  impossible to cover up.
+
+  @param[in,out] BootCpuCount  On input, the boot CPU count reported by QEMU via
+                               fw_cfg (QemuFwCfgItemSmpCpuCount). The caller is
+                               responsible for ensuring (BootCpuCount > 0); that
+                               is, if QEMU does not provide the boot CPU count
+                               via fw_cfg *at all*, then this function must not
+                               be called.
+
+  @param[in,out] Present       On input, the number of present-at-boot CPUs, as
+                               reported by QEMU through the modern CPU hotplug
+                               register block.
+
+  @param[in,out] Possible      On input, the number of possible CPUs, as
+                               reported by QEMU through the modern CPU hotplug
+                               register block.
+**/
+STATIC
+VOID
+PlatformCpuCountBugCheck (
+  IN OUT UINT16  *BootCpuCount,
+  IN OUT UINT32  *Present,
+  IN OUT UINT32  *Possible
+  )
+{
+  ASSERT (*BootCpuCount > 0);
+
+  //
+  // Sanity check: we need at least 1 present CPU (CPU#0 is always present).
+  //
+  // The legacy-to-modern switching of the CPU hotplug register block got broken
+  // (for TCG) in QEMU v5.1.0. Refer to "IO port write width clamping differs
+  // between TCG and KVM" at
+  // <http://mid.mail-archive.com/aaedee84-d3ed-a4f9-21e7-d221a28d1683@redhat.com>
+  // or at
+  // <https://lists.gnu.org/archive/html/qemu-devel/2023-01/msg00199.html>.
+  //
+  // QEMU received the fix in commit dab30fbef389 ("acpi: cpuhp: fix
+  // guest-visible maximum access size to the legacy reg block", 2023-01-08), to
+  // be included in QEMU v8.0.0.
+  //
+  // If we're affected by this QEMU bug, then we must not continue: it confuses
+  // the multiprocessing in UefiCpuPkg/Library/MpInitLib, and breaks CPU
+  // hot(un)plug with SMI in OvmfPkg/CpuHotplugSmm.
+  //
+  if (*Present == 0) {
+    UINTN                      Idx;
+    STATIC CONST CHAR8 *CONST  Message[] = {
+      "Broken CPU hotplug register block found. Update QEMU to version 8+, or",
+      "to a stable release with commit dab30fbef389 backported. Refer to",
+      "<https://bugzilla.tianocore.org/show_bug.cgi?id=4250>.",
+      "Consequences of the QEMU bug may include, but are not limited to:",
+      "- all firmware logic, dependent on the CPU hotplug register block,",
+      "  being confused, for example, multiprocessing-related logic;",
+      "- guest OS data loss, including filesystem corruption, due to crash or",
+      "  hang during ACPI S3 resume;",
+      "- SMM privilege escalation, by a malicious guest OS or 3rd partty UEFI",
+      "  agent, against the platform firmware.",
+      "These symptoms need not necessarily be limited to the QEMU user",
+      "attempting to hot(un)plug a CPU.",
+      "The firmware will now stop (hang) deliberately, in order to prevent the",
+      "above symptoms.",
+      "You can forcibly override the hang, *at your own risk*, with the",
+      "following *experimental* QEMU command line option:",
+      "  -fw_cfg name=" CPUHP_BUGCHECK_OVERRIDE_FWCFG_FILE ",string=yes",
+      "Please only report such bugs that you can reproduce *without* the",
+      "override.",
+    };
+    RETURN_STATUS              ParseStatus;
+    BOOLEAN                    Override;
+
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: Present=%u Possible=%u\n",
+      __func__,
+      *Present,
+      *Possible
+      ));
+    for (Idx = 0; Idx < ARRAY_SIZE (Message); ++Idx) {
+      DEBUG ((DEBUG_ERROR, "%a: %a\n", __func__, Message[Idx]));
+    }
+
+    ParseStatus = QemuFwCfgParseBool (
+                    CPUHP_BUGCHECK_OVERRIDE_FWCFG_FILE,
+                    &Override
+                    );
+    if (!RETURN_ERROR (ParseStatus) && Override) {
+      DEBUG ((
+        DEBUG_WARN,
+        "%a: \"%a\" active. You've been warned.\n",
+        __func__,
+        CPUHP_BUGCHECK_OVERRIDE_FWCFG_FILE
+        ));
+      //
+      // The bug is in QEMU v5.1.0+, where we're not affected by the QEMU v2.7
+      // reset bug, so BootCpuCount from fw_cfg is reliable. Assume a fully
+      // populated topology, like when the modern CPU hotplug interface is
+      // unavailable.
+      //
+      *Present  = *BootCpuCount;
+      *Possible = *BootCpuCount;
+      return;
+    }
+
+    ASSERT (FALSE);
+    CpuDeadLoop ();
+  }
+
+  //
+  // Sanity check: fw_cfg and the modern CPU hotplug interface should expose the
+  // same boot CPU count.
+  //
+  if (*BootCpuCount != *Present) {
+    DEBUG ((
+      DEBUG_WARN,
+      "%a: QEMU v2.7 reset bug: BootCpuCount=%d Present=%u\n",
+      __func__,
+      *BootCpuCount,
+      *Present
+      ));
+    //
+    // The handling of QemuFwCfgItemSmpCpuCount, across CPU hotplug plus
+    // platform reset (including S3), was corrected in QEMU commit e3cadac073a9
+    // ("pc: fix FW_CFG_NB_CPUS to account for -device added CPUs", 2016-11-16),
+    // part of release v2.8.0.
+    //
+    *BootCpuCount = (UINT16)*Present;
+  }
+}
+
+/**
   Fetch the boot CPU count and the possible CPU count from QEMU, and expose
   them to UefiCpuPkg modules.
 **/
@@ -433,7 +573,7 @@ PlatformMaxCpuCountInitialization (
     // until PcdCpuApInitTimeOutInMicroSeconds elapses (whichever is reached
     // first).
     //
-    DEBUG ((DEBUG_WARN, "%a: boot CPU count unavailable\n", __FUNCTION__));
+    DEBUG ((DEBUG_WARN, "%a: boot CPU count unavailable\n", __func__));
     MaxCpuCount = PlatformInfoHob->DefaultMaxCpuNumber;
   } else {
     //
@@ -486,7 +626,7 @@ PlatformMaxCpuCountInitialization (
     //    steps. Both cases confirm modern mode.
     //
     CmdData2 = IoRead32 (CpuHpBase + QEMU_CPUHP_R_CMD_DATA2);
-    DEBUG ((DEBUG_VERBOSE, "%a: CmdData2=0x%x\n", __FUNCTION__, CmdData2));
+    DEBUG ((DEBUG_VERBOSE, "%a: CmdData2=0x%x\n", __func__, CmdData2));
     if (CmdData2 != 0) {
       //
       // QEMU doesn't support the modern CPU hotplug interface. Assume that the
@@ -495,7 +635,7 @@ PlatformMaxCpuCountInitialization (
       DEBUG ((
         DEBUG_WARN,
         "%a: modern CPU hotplug interface unavailable\n",
-        __FUNCTION__
+        __func__
         ));
       MaxCpuCount = BootCpuCount;
     } else {
@@ -519,8 +659,8 @@ PlatformMaxCpuCountInitialization (
         UINT8  CpuStatus;
 
         //
-        // Read the status of the currently selected CPU. This will help with a
-        // sanity check against "BootCpuCount".
+        // Read the status of the currently selected CPU. This will help with
+        // various CPU count sanity checks.
         //
         CpuStatus = IoRead8 (CpuHpBase + QEMU_CPUHP_R_CPU_STAT);
         if ((CpuStatus & QEMU_CPUHP_STAT_ENABLED) != 0) {
@@ -541,27 +681,10 @@ PlatformMaxCpuCountInitialization (
         ASSERT (Selected == Possible || Selected == 0);
       } while (Selected > 0);
 
-      //
-      // Sanity check: fw_cfg and the modern CPU hotplug interface should
-      // return the same boot CPU count.
-      //
-      if (BootCpuCount != Present) {
-        DEBUG ((
-          DEBUG_WARN,
-          "%a: QEMU v2.7 reset bug: BootCpuCount=%d "
-          "Present=%u\n",
-          __FUNCTION__,
-          BootCpuCount,
-          Present
-          ));
-        //
-        // The handling of QemuFwCfgItemSmpCpuCount, across CPU hotplug plus
-        // platform reset (including S3), was corrected in QEMU commit
-        // e3cadac073a9 ("pc: fix FW_CFG_NB_CPUS to account for -device added
-        // CPUs", 2016-11-16), part of release v2.8.0.
-        //
-        BootCpuCount = (UINT16)Present;
-      }
+      PlatformCpuCountBugCheck (&BootCpuCount, &Present, &Possible);
+      ASSERT (Present > 0);
+      ASSERT (Present <= Possible);
+      ASSERT (BootCpuCount == Present);
 
       MaxCpuCount = Possible;
     }
@@ -570,7 +693,7 @@ PlatformMaxCpuCountInitialization (
   DEBUG ((
     DEBUG_INFO,
     "%a: BootCpuCount=%d MaxCpuCount=%u\n",
-    __FUNCTION__,
+    __func__,
     BootCpuCount,
     MaxCpuCount
     ));
@@ -653,6 +776,7 @@ PlatformValidateNvVarStore (
       (!CompareGuid (&FvHdrGUID, &NvVarStoreFvHeader->FileSystemGuid)) ||
       (NvVarStoreFvHeader->Signature != EFI_FVH_SIGNATURE) ||
       (NvVarStoreFvHeader->Attributes != 0x4feff) ||
+      ((NvVarStoreFvHeader->HeaderLength & 0x01) != 0) ||
       (NvVarStoreFvHeader->Revision != EFI_FVH_REVISION) ||
       (NvVarStoreFvHeader->FvLength != NvVarStoreSize)
       )
@@ -701,10 +825,11 @@ PlatformValidateNvVarStore (
 
       VariableOffset = NvVarStoreHeader->Size - sizeof (VARIABLE_STORE_HEADER);
     } else {
-      if (!((VariableHeader->State == VAR_IN_DELETED_TRANSITION) ||
-            (VariableHeader->State == VAR_DELETED) ||
-            (VariableHeader->State == VAR_HEADER_VALID_ONLY) ||
-            (VariableHeader->State == VAR_ADDED)))
+      if (!((VariableHeader->State == VAR_HEADER_VALID_ONLY) ||
+            (VariableHeader->State == VAR_ADDED) ||
+            (VariableHeader->State == (VAR_ADDED & VAR_DELETED)) ||
+            (VariableHeader->State == (VAR_ADDED & VAR_IN_DELETED_TRANSITION)) ||
+            (VariableHeader->State == (VAR_ADDED & VAR_IN_DELETED_TRANSITION & VAR_DELETED))))
       {
         DEBUG ((DEBUG_ERROR, "NvVarStore Variable header State was invalid.\n"));
         return FALSE;

@@ -702,7 +702,7 @@ EhcExecTransfer (
   }
 
   if (!Finished) {
-    DEBUG ((DEBUG_ERROR, "EhcExecTransfer: transfer not finished in %dms\n", (UINT32)TimeOut));
+    DEBUG ((DEBUG_VERBOSE, "EhcExecTransfer: transfer not finished in %dms\n", (UINT32)TimeOut));
     EhcDumpQh (Urb->Qh, NULL, FALSE);
 
     Status = EFI_TIMEOUT;
@@ -836,7 +836,7 @@ EhciInsertAsyncIntTransfer (
   Data = AllocatePool (DataLen);
 
   if (Data == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to allocate buffer\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to allocate buffer\n", __func__));
     return NULL;
   }
 
@@ -858,7 +858,7 @@ EhciInsertAsyncIntTransfer (
           );
 
   if (Urb == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to create URB\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to create URB\n", __func__));
     gBS->FreePool (Data);
     return NULL;
   }

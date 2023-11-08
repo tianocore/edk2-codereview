@@ -6,10 +6,12 @@
 
 **/
 
-#include <Base.h>
+#include <Uefi.h>
+#include <Pi/PiMultiPhase.h>
 #include <Library/ArmLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
+#include <Library/HobLib.h>
 #include <Library/MemoryAllocationLib.h>
 
 // Number of Virtual Memory Map Descriptors
@@ -23,6 +25,28 @@
 //
 #define MACH_VIRT_PERIPH_BASE  0x08000000
 #define MACH_VIRT_PERIPH_SIZE  SIZE_128MB
+
+/**
+  Default library constructur that obtains the memory size from a PCD.
+
+  @return  Always returns RETURN_SUCCESS
+
+**/
+RETURN_STATUS
+EFIAPI
+QemuVirtMemInfoLibConstructor (
+  VOID
+  )
+{
+  UINT64  Size;
+  VOID    *Hob;
+
+  Size = PcdGet64 (PcdSystemMemorySize);
+  Hob  = BuildGuidDataHob (&gArmVirtSystemMemorySizeGuid, &Size, sizeof Size);
+  ASSERT (Hob != NULL);
+
+  return RETURN_SUCCESS;
+}
 
 /**
   Return the Virtual Memory Map of your platform
@@ -43,8 +67,15 @@ ArmVirtGetMemoryMap (
   )
 {
   ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
+  VOID                          *MemorySizeHob;
 
   ASSERT (VirtualMemoryMap != NULL);
+
+  MemorySizeHob = GetFirstGuidHob (&gArmVirtSystemMemorySizeGuid);
+  ASSERT (MemorySizeHob != NULL);
+  if (MemorySizeHob == NULL) {
+    return;
+  }
 
   VirtualMemoryTable = AllocatePool (
                          sizeof (ARM_MEMORY_REGION_DESCRIPTOR) *
@@ -52,14 +83,14 @@ ArmVirtGetMemoryMap (
                          );
 
   if (VirtualMemoryTable == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: Error: Failed AllocatePool()\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Error: Failed AllocatePool()\n", __func__));
     return;
   }
 
   // System DRAM
   VirtualMemoryTable[0].PhysicalBase = PcdGet64 (PcdSystemMemoryBase);
   VirtualMemoryTable[0].VirtualBase  = VirtualMemoryTable[0].PhysicalBase;
-  VirtualMemoryTable[0].Length       = PcdGet64 (PcdSystemMemorySize);
+  VirtualMemoryTable[0].Length       = *(UINT64 *)GET_GUID_HOB_DATA (MemorySizeHob);
   VirtualMemoryTable[0].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
   DEBUG ((
@@ -68,7 +99,7 @@ ArmVirtGetMemoryMap (
     "\tPhysicalBase: 0x%lX\n"
     "\tVirtualBase: 0x%lX\n"
     "\tLength: 0x%lX\n",
-    __FUNCTION__,
+    __func__,
     VirtualMemoryTable[0].PhysicalBase,
     VirtualMemoryTable[0].VirtualBase,
     VirtualMemoryTable[0].Length
@@ -84,7 +115,7 @@ ArmVirtGetMemoryMap (
   VirtualMemoryTable[2].PhysicalBase = PcdGet64 (PcdFvBaseAddress);
   VirtualMemoryTable[2].VirtualBase  = VirtualMemoryTable[2].PhysicalBase;
   VirtualMemoryTable[2].Length       = FixedPcdGet32 (PcdFvSize);
-  VirtualMemoryTable[2].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+  VirtualMemoryTable[2].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO;
 
   // End of Table
   ZeroMem (&VirtualMemoryTable[3], sizeof (ARM_MEMORY_REGION_DESCRIPTOR));

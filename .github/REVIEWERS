@@ -72,7 +72,7 @@
 # L: devel@edk2.groups.io
 # F: *
 # F: */
-#
+
 # Tianocore Stewards
 # ------------------
 # F: *
@@ -83,20 +83,12 @@
 # Responsible Disclosure, Reporting Security Issues
 # -------------------------------------------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/Security
-#
+
 # EDK II Releases:
 # ----------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Release-Planning
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-#
-# UEFI Shell Binaries (ShellBinPkg.zip) from EDK II Releases:
-# -----------------------------------------------------------
-# W: https://github.com/tianocore/edk2/releases/
-# M: Ray Ni <ray.ni@intel.com> [niruiyu]                        (Ia32/X64)
-# M: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]           (Ia32/X64)
-# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]           (ARM/AArch64)
-# M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel] (ARM/AArch64)
-#
+
 # EDK II Architectures:
 # ---------------------
 # ARM, AARCH64
@@ -104,42 +96,69 @@
 # F: */Arm/
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
-#
+# M: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
+
 # RISCV64
 # F: */RiscV64/
 # M: Sunil V L <sunilvl@ventanamicro.com> [vlsunil]
-# R: Daniel Schaefer <git@danielschaefer.me> [JohnAZoidberg]
-#
+# R: Andrei Warkentin <andrei.warkentin@intel.com> [andreiw]
+
+# LOONGARCH64
+# F: */LoongArch64/
+# M: Chao Li <lichao@loongson.cn> [kilaterlee]
+# M: Baoqi Zhang <zhangbaoqi@loongson.cn> [zhangbaoqi-ls]
+# R: Dongyan Qian <qiandongyan@loongson.cn> [MarsDoge]
+
 # EDK II Continuous Integration:
 # ------------------------------
 # .azurepipelines/
 # F: .azurepipelines/
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# M: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.azurepipelines/**  @mdkinney @lgao4
 
-# .github/workflows/
-# F: .github/workflows/
-# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+# .devcontainer/
+# F: .devcontainer/
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
-# R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/.github/workflows/**  @spbrogan @lgao4
+# R: Chris Fernald <chris.fernald@outlook.com> [cfernald]
+/.devcontainer/**  @cfernald
+
+# .github/
+# F: .github/
+# X: .github/CODEOWNERS
+# X: .github/REVIEWERS
+# M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
+# R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+/.github/**  @mdkinney
+
+# .github/CODEOWNERS
+# F: .github/CODEOWNERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+/.github/CODEOWNERS
+
+# .github/REVIEWERS
+# F: .github/REVIEWERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+/.github/REVIEWERS
 
 # .mergify/
 # F: .mergify/
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 # R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# R: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
-/.mergify/**  @spbrogan @corthon
+/.mergify/**  @spbrogan
 
 # .pytool/
 # F: .pytool/
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# M: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.pytool/**  @mdkinney @lgao4
@@ -169,46 +188,36 @@
 # R: Gerd Hoffmann <kraxel@redhat.com> [kraxel]
 /ArmVirtPkg/**  @leiflindholm @samimujawar @kraxel
 
-# ArmVirtPkg: modules used on Xen
-# F: ArmVirtPkg/ArmVirtXen.*
-# F: ArmVirtPkg/Library/XenArmGenericTimerVirtCounterLib/
-# F: ArmVirtPkg/Library/XenVirtMemInfoLib/
-# F: ArmVirtPkg/PrePi/
-# F: ArmVirtPkg/XenAcpiPlatformDxe/
-# F: ArmVirtPkg/XenPlatformHasAcpiDtDxe/
-# F: ArmVirtPkg/XenioFdtDxe/
-# R: Julien Grall <julien@xen.org> [jgrall]
-/ArmVirtPkg/ArmVirtXen.*                                 @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/Library/XenArmGenericTimerVirtCounterLib/**  @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/Library/XenVirtMemInfoLib/**                 @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/PrePi/**                                     @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/XenAcpiPlatformDxe/**                        @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/XenPlatformHasAcpiDtDxe/**                   @leiflindholm @samimujawar @kraxel @jgrall
-/ArmVirtPkg/XenioFdtDxe/**                               @leiflindholm @samimujawar @kraxel @jgrall
-
 # BaseTools
 # F: BaseTools/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/BaseTools
-# M: Bob Feng <bob.c.feng@intel.com> [BobCF]
+# M: Rebecca Cran <rebecca@bsdio.com> [bcran]
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
+# R: Bob Feng <bob.c.feng@intel.com> [BobCF]
 # R: Yuwei Chen <yuwei.chen@intel.com> [YuweiChen1110]
-/BaseTools/**             @YuweiChen1110
-/BaseTools/**/RiscV64/**  @YuweiChen1110 @JohnAZoidberg
+/BaseTools/**             @BobCF @YuweiChen1110
+
+# BaseTools: Plugins
+# F: BaseTools/Plugin/
+# M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
+# R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
+# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
+/BaseTools/Plugin/**  @BobCF @YuweiChen1110 @mdkinney @lgao4
 
 # CryptoPkg
 # F: CryptoPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/CryptoPkg
 # M: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
-# M: Jian J Wang <jian.j.wang@intel.com> [jwang36]
-# R: Xiaoyu Lu <xiaoyu1.lu@intel.com> [xiaoyuxlu]
-# R: Guomin Jiang <guomin.jiang@intel.com> [guominjia]
-/CryptoPkg/**  @xiaoyuxlu @guominjia
+# M: Yi Li <yi1.li@intel.com> [liyi77]
+# R: Wenxing Hou <wenxing.hou@intel.com> [Wenxing-hou]
+/CryptoPkg/**  @Wenxing-hou
 
 # DynamicTablesPkg
 # F: DynamicTablesPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/DynamicTablesPkg
 # M: Sami Mujawar <Sami.Mujawar@arm.com> [samimujawar]
-# M: Alexei Fedorov <Alexei.Fedorov@arm.com> [AlexeiFedorov]
+# M: Pierre Gondois <pierre.gondois@arm.com> [pierregondois]
 
 # EmbeddedPkg
 # F: EmbeddedPkg/
@@ -216,8 +225,6 @@
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
 # M: Abner Chang <abner.chang@amd.com> [changab]
-# R: Daniel Schaefer <git@danielschaefer.me> [JohnAZoidberg]
-/EmbeddedPkg/**  @JohnAZoidberg
 
 # EmulatorPkg
 # F: EmulatorPkg/
@@ -229,8 +236,7 @@
 # EmulatorPkg: Redfish-related modules
 # F: EmulatorPkg/*Redfish*
 # M: Abner Chang <abner.chang@amd.com> [changab]
-# R: Nickle Wang <nickle@csie.io> [nicklela]
-/EmulatorPkg/**/Redfish*/**  @nicklela
+# M: Nickle Wang <nicklew@nvidia.com> [nicklela]
 
 # FatPkg
 # F: FatPkg/
@@ -244,30 +250,37 @@
 # W: https://github.com/tianocore/tianocore.github.io/wiki/FmpDevicePkg
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
-# R: Guomin Jiang <guomin.jiang@intel.com> [guominjia]
 # R: Wei6 Xu <wei6.xu@intel.com> [xuweiintel]
-/FmpDevicePkg/**  @guominjia @xuweiintel
+/FmpDevicePkg/**  @xuweiintel
 
 # IntelFsp2Pkg
 # F: IntelFsp2Pkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/IntelFsp2Pkg
 # M: Chasel Chiu <chasel.chiu@intel.com> [ChaselChiu]
 # M: Nate DeSimone <nathaniel.l.desimone@intel.com> [nate-desimone]
+# M: Duggapu Chinni B <chinni.b.duggapu@intel.com> [cbduggap]
 # R: Star Zeng <star.zeng@intel.com> [lzeng14]
-/IntelFsp2Pkg/**  @lzeng14
+# R: Ted Kuo <ted.kuo@intel.com> [tedkuo1]
+# R: Ashraf Ali S <ashraf.ali.s@intel.com> [AshrafAliS]
+# R: Susovan Mohapatra <susovan.mohapatra@intel.com> [susovanmohapatra]
+/IntelFsp2Pkg/**  @lzeng14 @tedkuo1 @AshrafAliS @susovanmohapatra
 
 # IntelFsp2WrapperPkg
 # F: IntelFsp2WrapperPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/IntelFsp2WrapperPkg
 # M: Chasel Chiu <chasel.chiu@intel.com> [ChaselChiu]
 # M: Nate DeSimone <nathaniel.l.desimone@intel.com> [nate-desimone]
+# M: Duggapu Chinni B <chinni.b.duggapu@intel.com> [cbduggap]
+# M: Chen Gang C <gang.c.chen@intel.com> [chengangc]
 # R: Star Zeng <star.zeng@intel.com> [lzeng14]
-/IntelFsp2WrapperPkg/**  @lzeng14
+# R: Ted Kuo <ted.kuo@intel.com> [tedkuo1]
+# R: Ashraf Ali S <ashraf.ali.s@intel.com> [AshrafAliS]
+# R: Susovan Mohapatra <susovan.mohapatra@intel.com> [susovanmohapatra]
+/IntelFsp2WrapperPkg/**  @lzeng14 @tedkuo1 @AshrafAliS @susovanmohapatra
 
 # MdeModulePkg
 # F: MdeModulePkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/MdeModulePkg
-# M: Jian J Wang <jian.j.wang@intel.com> [jwang36]
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 
 # MdeModulePkg: ACPI modules
@@ -276,22 +289,8 @@
 # R: Zhiguang Liu <zhiguang.liu@intel.com> [LiuZhiguang001]
 # R: Dandan Bi <dandan.bi@intel.com> [dandanbi]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/MdeModulePkg/Include/*/*Acpi*.h  @LiuZhiguang001 @dandanbi @lgao4
-/MdeModulePkg/Universal/Acpi/**   @LiuZhiguang001 @dandanbi @lgao4
-
-# MdeModulePkg: ACPI modules related to S3
-# F: MdeModulePkg/*LockBox*/
-# F: MdeModulePkg/Include/*BootScript*.h
-# F: MdeModulePkg/Include/*LockBox*.h
-# F: MdeModulePkg/Include/*S3*.h
-# F: MdeModulePkg/Library/*S3*/
-# R: Hao A Wu <hao.a.wu@intel.com> [hwu25]
-# R: Eric Dong <eric.dong@intel.com> [ydong10]
-/MdeModulePkg/**/*LockBox*/**           @hwu25 @ydong10
-/MdeModulePkg/Include/*/*BootScript*.h  @hwu25 @ydong10
-/MdeModulePkg/Include/*/*LockBox*.h     @hwu25 @ydong10
-/MdeModulePkg/Include/*/*S3*.h          @hwu25 @ydong10
-/MdeModulePkg/Library/*S3*/**           @hwu25 @ydong10
+/MdeModulePkg/Include/*/*Acpi*.h  @LiuZhiguang001 @dandanbi
+/MdeModulePkg/Universal/Acpi/**   @LiuZhiguang001 @dandanbi
 
 # MdeModulePkg: BDS modules
 # F: MdeModulePkg/*BootManager*/
@@ -324,18 +323,17 @@
 # F: MdeModulePkg/Library/FrameBufferBltLib/
 # F: MdeModulePkg/Universal/Console/
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-# R: Ray Ni <ray.ni@intel.com> [niruiyu]
-/MdeModulePkg/**/*Logo*/**                         @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/*/*Logo*.h                   @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Guid/ConnectConInEvent.h     @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Guid/Console*.h              @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Guid/StandardErrorDevice.h   @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Guid/TtyTerm.h               @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Library/BmpSupportLib.h      @ZhichaoGao @niruiyu
-/MdeModulePkg/Include/Library/FrameBufferBltLib.h  @ZhichaoGao @niruiyu
-/MdeModulePkg/Library/BaseBmpSupportLib/**         @ZhichaoGao @niruiyu
-/MdeModulePkg/Library/FrameBufferBltLib/**         @ZhichaoGao @niruiyu
-/MdeModulePkg/Universal/Console/**                 @ZhichaoGao @niruiyu
+/MdeModulePkg/**/*Logo*/**                         @ZhichaoGao
+/MdeModulePkg/Include/*/*Logo*.h                   @ZhichaoGao
+/MdeModulePkg/Include/Guid/ConnectConInEvent.h     @ZhichaoGao
+/MdeModulePkg/Include/Guid/Console*.h              @ZhichaoGao
+/MdeModulePkg/Include/Guid/StandardErrorDevice.h   @ZhichaoGao
+/MdeModulePkg/Include/Guid/TtyTerm.h               @ZhichaoGao
+/MdeModulePkg/Include/Library/BmpSupportLib.h      @ZhichaoGao
+/MdeModulePkg/Include/Library/FrameBufferBltLib.h  @ZhichaoGao
+/MdeModulePkg/Library/BaseBmpSupportLib/**         @ZhichaoGao
+/MdeModulePkg/Library/FrameBufferBltLib/**         @ZhichaoGao
+/MdeModulePkg/Universal/Console/**                 @ZhichaoGao
 
 # MdeModulePkg: Core services (PEI, DXE and Runtime) modules
 # F: MdeModulePkg/*Mem*/
@@ -361,32 +359,7 @@
 # F: MdeModulePkg/Universal/PCD/
 # F: MdeModulePkg/Universal/PlatformDriOverrideDxe/
 # F: MdeModulePkg/Universal/SecurityStubDxe/SecurityStub.c
-# R: Dandan Bi <dandan.bi@intel.com> [dandanbi]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/MdeModulePkg/**/*Mem*/**                                  @dandanbi  @lgao4
-/MdeModulePkg/**/*SectionExtract*/**                       @dandanbi  @lgao4
-/MdeModulePkg/**/*StatusCode*/**                           @dandanbi  @lgao4
-/MdeModulePkg/Application/DumpDynPcd/**                    @dandanbi  @lgao4
-/MdeModulePkg/Core/Dxe/**                                  @dandanbi  @lgao4
-/MdeModulePkg/Core/DxeIplPeim/**                           @dandanbi  @lgao4
-/MdeModulePkg/Core/DxeIplPeim/**/RiscV64/**                @dandanbi  @lgao4 @JohnAZoidberg
-/MdeModulePkg/Core/RuntimeDxe/**                           @dandanbi  @lgao4
-/MdeModulePkg/Include/*/*Mem*.h                            @dandanbi  @lgao4
-/MdeModulePkg/Include/*/*Pcd*.h                            @dandanbi  @lgao4
-/MdeModulePkg/Include/*/*Perf*.h                           @dandanbi  @lgao4
-/MdeModulePkg/Include/*/*StatusCode*.h                     @dandanbi  @lgao4
-/MdeModulePkg/Include/Guid/Crc32GuidedSectionExtraction.h  @dandanbi  @lgao4
-/MdeModulePkg/Include/Guid/EventExitBootServiceFailed.h    @dandanbi  @lgao4
-/MdeModulePkg/Include/Guid/IdleLoopEvent.h                 @dandanbi  @lgao4
-/MdeModulePkg/Include/Guid/LoadModuleAtFixedAddress.h      @dandanbi  @lgao4
-/MdeModulePkg/Include/Guid/LzmaDecompress.h                @dandanbi  @lgao4
-/MdeModulePkg/Include/Library/SecurityManagementLib.h      @dandanbi  @lgao4
-/MdeModulePkg/Library/*Decompress*/**                      @dandanbi  @lgao4
-/MdeModulePkg/Library/*Perf*/**                            @dandanbi  @lgao4
-/MdeModulePkg/Library/DxeSecurityManagementLib/**          @dandanbi  @lgao4
-/MdeModulePkg/Universal/PCD/**                             @dandanbi  @lgao4
-/MdeModulePkg/Universal/PlatformDriOverrideDxe/**          @dandanbi  @lgao4
-/MdeModulePkg/Universal/SecurityStubDxe/SecurityStub.c     @dandanbi  @lgao4
 
 # MdeModulePkg: Device and Peripheral modules
 # F: MdeModulePkg/*PciHostBridge*/
@@ -405,31 +378,29 @@
 # F: MdeModulePkg/Include/Protocol/Ps2Policy.h
 # F: MdeModulePkg/Library/NonDiscoverableDeviceRegistrationLib/
 # F: MdeModulePkg/Universal/PcatSingleSegmentPciCfg2Pei/
-# R: Hao A Wu <hao.a.wu@intel.com> [hwu25]
 # R: Ray Ni <ray.ni@intel.com> [niruiyu]
-/MdeModulePkg/**/*PciHostBridge*/**                            @hwu25  @niruiyu
-/MdeModulePkg/Bus/**                                           @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*Ata*.h                                @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*IoMmu*.h                              @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*NonDiscoverableDevice*.h              @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*NvmExpress*.h                         @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*SdMmc*.h                              @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*Ufs*.h                                @hwu25  @niruiyu
-/MdeModulePkg/Include/*/*Usb*.h                                @hwu25  @niruiyu
-/MdeModulePkg/Include/Guid/RecoveryDevice.h                    @hwu25  @niruiyu
-/MdeModulePkg/Include/Guid/S3StorageDeviceInitList.h           @hwu25  @niruiyu @ydong10
-/MdeModulePkg/Include/Library/PciHostBridgeLib.h               @hwu25  @niruiyu
-/MdeModulePkg/Include/Ppi/StorageSecurityCommand.h             @hwu25  @niruiyu
-/MdeModulePkg/Include/Protocol/Ps2Policy.h                     @hwu25  @niruiyu
-/MdeModulePkg/Library/NonDiscoverableDeviceRegistrationLib/**  @hwu25  @niruiyu
-/MdeModulePkg/Universal/PcatSingleSegmentPciCfg2Pei/**         @hwu25  @niruiyu
+/MdeModulePkg/**/*PciHostBridge*/**                            @niruiyu
+/MdeModulePkg/Bus/**                                           @niruiyu
+/MdeModulePkg/Include/*/*Ata*.h                                @niruiyu
+/MdeModulePkg/Include/*/*IoMmu*.h                              @niruiyu
+/MdeModulePkg/Include/*/*NonDiscoverableDevice*.h              @niruiyu
+/MdeModulePkg/Include/*/*NvmExpress*.h                         @niruiyu
+/MdeModulePkg/Include/*/*SdMmc*.h                              @niruiyu
+/MdeModulePkg/Include/*/*Ufs*.h                                @niruiyu
+/MdeModulePkg/Include/*/*Usb*.h                                @niruiyu
+/MdeModulePkg/Include/Guid/RecoveryDevice.h                    @niruiyu
+/MdeModulePkg/Include/Guid/S3StorageDeviceInitList.h           @niruiyu
+/MdeModulePkg/Include/Library/PciHostBridgeLib.h               @niruiyu
+/MdeModulePkg/Include/Ppi/StorageSecurityCommand.h             @niruiyu
+/MdeModulePkg/Include/Protocol/Ps2Policy.h                     @niruiyu
+/MdeModulePkg/Library/NonDiscoverableDeviceRegistrationLib/**  @niruiyu
+/MdeModulePkg/Universal/PcatSingleSegmentPciCfg2Pei/**         @niruiyu
 
 # MdeModulePkg: Disk modules
 # F: MdeModulePkg/Universal/Disk/
-# R: Hao A Wu <hao.a.wu@intel.com> [hwu25]
 # R: Ray Ni <ray.ni@intel.com> [niruiyu]
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-/MdeModulePkg/Universal/Disk/**  @hwu25  @niruiyu  @ZhichaoGao
+/MdeModulePkg/Universal/Disk/**  @niruiyu  @ZhichaoGao
 
 # MdeModulePkg: Firmware Update modules
 # F: MdeModulePkg/*Capsule*/
@@ -442,16 +413,6 @@
 # F: MdeModulePkg/Library/FmpAuthenticationLibNull/
 # F: MdeModulePkg/Universal/Esrt*/
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-# R: Guomin Jiang <guomin.jiang@intel.com> [guominjia]
-/MdeModulePkg/**/*Capsule*/**                                @lgao4  @guominjia
-/MdeModulePkg/Include/*/*Capsule*.h                          @lgao4  @guominjia
-/MdeModulePkg/Include/Library/DisplayUpdateProgressLib.h     @lgao4  @guominjia
-/MdeModulePkg/Include/Library/FmpAuthenticationLib.h         @lgao4  @guominjia
-/MdeModulePkg/Include/Protocol/EsrtManagement.h              @lgao4  @guominjia
-/MdeModulePkg/Include/Protocol/FirmwareManagementProgress.h  @lgao4  @guominjia
-/MdeModulePkg/Library/DisplayUpdateProgressLib*/**           @lgao4  @guominjia
-/MdeModulePkg/Library/FmpAuthenticationLibNull/**            @lgao4  @guominjia
-/MdeModulePkg/Universal/Esrt*/**                             @lgao4  @guominjia
 
 # MdeModulePkg: HII and UI modules
 # F: MdeModulePkg/*FileExplorer*/
@@ -468,57 +429,50 @@
 # F: MdeModulePkg/Universal/DriverSampleDxe/
 # F: MdeModulePkg/Universal/SetupBrowserDxe/
 # R: Dandan Bi <dandan.bi@intel.com> [dandanbi]
-# R: Eric Dong <eric.dong@intel.com> [ydong10]
-/MdeModulePkg/**/*FileExplorer*/**                    @dandanbi  @ydong10
-/MdeModulePkg/**/*Hii*/**                             @dandanbi  @ydong10
-/MdeModulePkg/**/*Ui*/**                              @dandanbi  @ydong10
-/MdeModulePkg/Application/BootManagerMenuApp/**       @ZhichaoGao @niruiyu @dandanbi  @ydong10
-/MdeModulePkg/Include/*/*FileExplorer*.h              @dandanbi  @ydong10
-/MdeModulePkg/Include/*/*FormBrowser*.h               @dandanbi  @ydong10
-/MdeModulePkg/Include/*/*Hii*.h                       @dandanbi  @ydong10
-/MdeModulePkg/Include/Library/CustomizedDisplayLib.h  @dandanbi  @ydong10
-/MdeModulePkg/Include/Protocol/DisplayProtocol.h      @dandanbi  @ydong10
-/MdeModulePkg/Library/CustomizedDisplayLib/**         @dandanbi  @ydong10
-/MdeModulePkg/Universal/DisplayEngineDxe/**           @dandanbi  @ydong10
-/MdeModulePkg/Universal/DriverSampleDxe/**            @dandanbi  @ydong10
-/MdeModulePkg/Universal/SetupBrowserDxe/**            @dandanbi  @ydong10
+/MdeModulePkg/**/*FileExplorer*/**                    @dandanbi
+/MdeModulePkg/**/*Hii*/**                             @dandanbi
+/MdeModulePkg/**/*Ui*/**                              @dandanbi
+/MdeModulePkg/Application/BootManagerMenuApp/**       @dandanbi @ZhichaoGao @niruiyu
+/MdeModulePkg/Include/*/*FileExplorer*.h              @dandanbi
+/MdeModulePkg/Include/*/*FormBrowser*.h               @dandanbi
+/MdeModulePkg/Include/*/*Hii*.h                       @dandanbi
+/MdeModulePkg/Include/Library/CustomizedDisplayLib.h  @dandanbi
+/MdeModulePkg/Include/Protocol/DisplayProtocol.h      @dandanbi
+/MdeModulePkg/Library/CustomizedDisplayLib/**         @dandanbi
+/MdeModulePkg/Library/VarCheckHiiLib/**               @dandanbi
+/MdeModulePkg/Universal/DisplayEngineDxe/**           @dandanbi
+/MdeModulePkg/Universal/DriverSampleDxe/**            @dandanbi
+/MdeModulePkg/Universal/SetupBrowserDxe/**            @dandanbi
 
 # MdeModulePkg: Management Mode (MM, SMM) modules
 # F: MdeModulePkg/*Smi*/
 # F: MdeModulePkg/*Smm*/
 # F: MdeModulePkg/Include/*Smi*.h
 # F: MdeModulePkg/Include/*Smm*.h
-# R: Eric Dong <eric.dong@intel.com> [ydong10]
+# R: Jiaxin Wu <jiaxin.wu@intel.com> [jiaxinwu]
 # R: Ray Ni <ray.ni@intel.com> [niruiyu]
-/MdeModulePkg/**/*Smi*/**        @ydong10  @niruiyu
-/MdeModulePkg/**/*Smm*/**        @ydong10  @niruiyu
-/MdeModulePkg/Include/*/*Smi*.h  @ydong10  @niruiyu
-/MdeModulePkg/Include/*/*Smm*.h  @ydong10  @niruiyu
+/MdeModulePkg/**/*Smi*/**        @jiaxinwu @niruiyu
+/MdeModulePkg/**/*Smm*/**        @jiaxinwu @niruiyu
+/MdeModulePkg/Include/*/*Smi*.h  @jiaxinwu @niruiyu
+/MdeModulePkg/Include/*/*Smm*.h  @jiaxinwu @niruiyu
+
+# MdeModulePkg: Pei Core
+# F: MdeModulePkg/Core/Pei/
+# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 
 # MdeModulePkg: Reset modules
 # F: MdeModulePkg/*Reset*/
 # F: MdeModulePkg/Include/*Reset*.h
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-# R: Ray Ni <ray.ni@intel.com> [niruiyu]
-/MdeModulePkg/**/*Reset*/          @ZhichaoGao  @niruiyu
-/MdeModulePkg/Include/*/*Reset*.h  @ZhichaoGao  @niruiyu
-
-# MdeModulePkg: Pei Core
-# F: MdeModulePkg/Core/Pei/
-# R: Dandan Bi <dandan.bi@intel.com> [dandanbi]
-# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-# R: Debkumar De <debkumar.de@intel.com>
-# R: Catharine West <catharine.west@intel.com> [catharine-intl]
-/MdeModulePkg/Core/Pei/**          @dandanbi @lgao4 @dde01 @catharine-intl
-/MdeModulePkg/Core/Pei/*Reset*/**  @dandanbi @lgao4 @dde01 @catharine-intl @ZhichaoGao @niruiyu
+/MdeModulePkg/**/*Reset*/          @ZhichaoGao
+/MdeModulePkg/Include/*/*Reset*.h  @ZhichaoGao
 
 # MdeModulePkg: Serial modules
 # F: MdeModulePkg/*Serial*/
 # F: MdeModulePkg/Include/*SerialPort*.h
-# R: Ray Ni <ray.ni@intel.com> [niruiyu]
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-/MdeModulePkg/**/*Serial*/**            @niruiyu  @ZhichaoGao
-/MdeModulePkg/Include/*/*SerialPort*.h  @niruiyu  @ZhichaoGao
+/MdeModulePkg/**/*Serial*/**            @ZhichaoGao
+/MdeModulePkg/Include/*/*SerialPort*.h  @ZhichaoGao
 
 # MdeModulePkg: SMBIOS modules
 # F: MdeModulePkg/Universal/Smbios*/
@@ -526,7 +480,7 @@
 # R: Dandan Bi <dandan.bi@intel.com> [dandanbi]
 # R: Star Zeng <star.zeng@intel.com> [lzeng14]
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-/MdeModulePkg/Universal/Smbios*/**  @LiuZhiguang001 @dandanbi  @lzeng14  @ZhichaoGao
+/MdeModulePkg/Universal/Smbios*/**  @LiuZhiguang001 @dandanbi @lzeng14 @ZhichaoGao
 
 # MdeModulePkg: UEFI Variable modules
 # F: MdeModulePkg/*Var*/
@@ -535,50 +489,58 @@
 # F: MdeModulePkg/Include/Guid/SystemNvDataGuid.h
 # F: MdeModulePkg/Include/Protocol/SwapAddressRange.h
 # F: MdeModulePkg/Universal/FaultTolerantWrite*/
-# R: Hao A Wu <hao.a.wu@intel.com> [hwu25]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/MdeModulePkg/**/*Var*/**                          @hwu25  @lgao4
-/MdeModulePkg/Include/*/*FaultTolerantWrite*.h     @hwu25  @lgao4
-/MdeModulePkg/Include/*/*Var*.h                    @hwu25  @lgao4
-/MdeModulePkg/Include/Guid/SystemNvDataGuid.h      @hwu25  @lgao4
-/MdeModulePkg/Include/Protocol/SwapAddressRange.h  @hwu25  @lgao4
-/MdeModulePkg/Universal/FaultTolerantWrite*/**     @hwu25  @lgao4
 
 # MdeModulePkg: Universal Payload definitions
 # F: MdeModulePkg/Include/UniversalPayload/
 # R: Zhiguang Liu <zhiguang.liu@intel.com> [LiuZhiguang001]
-# R: Ray Ni <ray.ni@intel.com> [niruiyu]
 # R: Gua Guo <gua.guo@intel.com> [gguo11837463]
-/MdeModulePkg/Include/UniversalPayload/**              @LiuZhiguang001 @niruiyu @gguo11837463
-/MdeModulePkg/Include/UniversalPayload/*SerialPort*.h  @LiuZhiguang001 @niruiyu @gguo11837463 @ZhichaoGao
-/MdeModulePkg/Include/UniversalPayload/*Acpi*.h        @LiuZhiguang001 @niruiyu @gguo11837463 @dandanbi @lgao4
+/MdeModulePkg/Include/UniversalPayload/**              @LiuZhiguang001 @gguo11837463
+/MdeModulePkg/Include/UniversalPayload/*SerialPort*.h  @LiuZhiguang001 @gguo11837463 @ZhichaoGao
+/MdeModulePkg/Include/UniversalPayload/*Acpi*.h        @LiuZhiguang001 @gguo11837463 @dandanbi
 
+# MdeModulePkg: Trace Hub debug message related library instance
+# F: MdeModulePkg/Library/TraceHubDebugSysTLib/
+# F: MdeModulePkg/Include/Guid/TraceHubDebugInfoHob.h
+# M: Gua Guo <gua.guo@intel.com> [gguo11837463]
+# M: Prakashan Krishnadas Veliyathuparambil <krishnadas.veliyathuparambil.prakashan@intel.com> [kprakas2]
+# R: K N Karthik <karthik.k.n@intel.com> [karthikkabbigere1]
+/MdeModulePkg/Library/TraceHubDebugSysTLib/**      @karthikkabbigere1
+/MdeModulePkg/Include/Guid/TraceHubDebugInfoHob.h  @karthikkabbigere1
 
+# MdeModulePkg: USB Network modules
+# F: MdeModulePkg/Bus/Usb/UsbNetwork
+# F: MdeModulePkg/Include/Protocol/UsbEthernetProtocol.h
+# M: Richard Ho <richardho@ami.com> [richardho]
+# R: Rebecca Cran <rebecca@bsdio.com> [bcran]
+/MdeModulePkg/Bus/Usb/UsbNetwork/**                   @bcran @niruiyu
+/MdeModulePkg/Include/Protocol/UsbEthernetProtocol.h  @bcran @niruiyu
+
+# MdeModulePkg: Manageability modules
+# F: MdeModulePkg/Include/*Ipmi*.*
+# F: MdeModulePkg/Library/*Ipmi*.*
+# M: Abner Chang <abner.chang@amd.com> [changab]
+# R: Abdul Lateef Attar <AbdulLateef.Attar@amd.com> [abdattar]
+# R: Nickle Wang <nicklew@nvidia.com> [nicklela]
+/MdeModulePkg/Include/**/*Ipmi*.*  @abdattar @nicklela
+/MdeModulePkg/Library/**/*Ipmi*.*  @abdattar @nicklela
 
 ###
-### Extra rules
+### MdeModulePkg rules for reviewers listed in more than one section
 ###
 
-/MdeModulePkg/**/*BootManagerUi*/**                 @dandanbi @ydong10 @ZhichaoGao @niruiyu
-/MdeModulePkg/**/VarCheckHiiLib/**                  @hwu25 @lgao4 @dandanbi @ydong10
-/MdeModulePkg/Bus/**/*Serial*/**                    @niruiyu  @ZhichaoGao @hwu25
-/MdeModulePkg/**/*Smm*LockBox*/**                   @hwu25 @ydong10 @niruiyu
-/MdeModulePkg/**/*StatusCode*/Smm/**                @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/**/*Smm*StatusCode*/**                @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/**/*Smm*Perf*/**                      @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/**/*Perf*Smm*/**                      @LiuZhiguang001 @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/**/Acpi/*Smm*/**                      @LiuZhiguang001 @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/**/*Smm*Mem*/**                       @dandanbi @lgao4 @niruiyu @ydong10
+# MdeModulePkg: BDS Modules AND HII/UI Modules
+/MdeModulePkg/**/*BootManagerUi*/**                              @ZhichaoGao @dandanbi @niruiyu
 
-/MdeModulePkg/Include/*/*Smm*LockBox*.h             @hwu25 @ydong10 @niruiyu
-/MdeModulePkg/Include/*/*Smm*Mem*.h                 @dandanbi @lgao4 @niruiyu @ydong10
-/MdeModulePkg/Include/*/*Acpi*S3*.h                 @LiuZhiguang001 @dandanbi @hwu25 @lgao4 @ydong10
-/MdeModulePkg/Include/*/*S3*Smm*.h                  @hwu25 @niruiyu @ydong10
-/MdeModulePkg/Include/*/*Smm*FaultTolerantWrite*.h  @hwu25  @lgao4 @niruiyu @ydong10
-/MdeModulePkg/Include/*/*Smm*Var*.h                 @hwu25  @lgao4 @niruiyu @ydong10
-/MdeModulePkg/Include/*/*StatusCode*Var*.h          @dandanbi @hwu25  @lgao4
-/MdeModulePkg/Include/*/*BootScript*Var*.h          @hwu25 @lgao4 @ydong10
+# MdeModulePkg: SMM/MM Modules AND ACPI
+/MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableSmm/**  @LiuZhiguang001 @dandanbi @niruiyu @jiaxinwu
+/MdeModulePkg/Universal/Acpi/SmmS3SaveState/**                   @LiuZhiguang001 @dandanbi @niruiyu @jiaxinwu
 
+# MdeModulePkg: SMM/MM AND Manageability modules
+/MdeModulePkg/Library/SmmIpmiLibSmmIpmiProtocol/                 @abdattar @jiaxinwu @nicklela @niruiyu
+
+# MdeModulePkg: Bus AND Serial modules
+/MdeModulePkg/Bus/Pci/PciSioSerialDxe/**  @niruiyu @ZhichaoGao
 
 # MdePkg
 # F: MdePkg/
@@ -586,26 +548,60 @@
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 # R: Zhiguang Liu <zhiguang.liu@intel.com> [LiuZhiguang001]
-/MdePkg/**             @LiuZhiguang001
-/MdePkg/**/RiscV64/**  @LiuZhiguang001 @JohnAZoidberg
+/MdePkg/**                 @LiuZhiguang001
+/MdePkg/**/RiscV64/**      @LiuZhiguang001 @andreiw
+/MdePkg/**/LoongArch64/**  @LiuZhiguang001 @MarsDoge
+
+# MdePkg: Trace Hub debug message related library instance
+# F: MdePkg/Library/TraceHubDebugSysTLibNull/
+# F: MdePkg/Library/MipiSysTLib/
+# F: MdePkg/Include/Library/TraceHubDebugSysTLib.h
+# F: MdePkg/Include/Library/MipiSysTLib.h
+# M: Gua Guo <gua.guo@intel.com> [gguo11837463]
+# M: Prakashan Krishnadas Veliyathuparambil <krishnadas.veliyathuparambil.prakashan@intel.com> [kprakas2]
+# R: Chan Laura <laura.chan@intel.com> [lauracha]
+# R: K N Karthik <karthik.k.n@intel.com> [karthikkabbigere1]
+/MdePkg/Library/TraceHubDebugSysTLibNull/**     @LiuZhiguang001 @lauracha @karthikkabbigere1
+/MdePkg/Library/MipiSysTLib/**                  @LiuZhiguang001 @lauracha @karthikkabbigere1
+/MdePkg/Include/Library/TraceHubDebugSysTLib.h  @LiuZhiguang001 @lauracha @karthikkabbigere1
+/MdePkg/Include/Library/MipiSysTLib.h           @LiuZhiguang001 @lauracha @karthikkabbigere1
+
+# MdePkg: FDT related library instance
+# F: MdePkg/Library/BaseFdtLib/FdtLib.c
+# F: MdePkg/Include/Library/FdtLib.h
+# M: Benny Lin <benny.lin@intel.com> [Benny3345678]
+# R: Gua Guo <gua.guo@intel.com> [gguo11837463]
+# R: Chasel Chiu <chasel.chiu@intel.com> [ChaselChiu]
+# R: James Lu <james.lu@intel.com> [jameslu8]
+/MdePkg/Library/BaseFdtLib/FdtLib.c  @LiuZhiguang001 @gguo11837463 @ChaselChiu @jameslu8
+/MdePkg/Include/Library/FdtLib.h     @LiuZhiguang001 @gguo11837463 @ChaselChiu @jameslu8
+
+# MdePkg: Manageability industryStandard standard C header files
+# F: MdePkg/Include/IndustryStandard/*Ipmi*.h
+# F: MdePkg/Include/IndustryStandard/*Mctp*.h
+# F: MdePkg/Include/IndustryStandard/*Pldm*.h
+# M: Abner Chang <abner.chang@amd.com> [changab]
+# R: Abdul Lateef Attar <AbdulLateef.Attar@amd.com> [abdattar]
+# R: Nickle Wang <nicklew@nvidia.com> [nicklela]
+/MdePkg/Include/IndustryStandard/*Ipmi*.h  @LiuZhiguang001 @abdattar @nicklela
+/MdePkg/Include/IndustryStandard/*Mctp*.h  @LiuZhiguang001 @abdattar @nicklela
+/MdePkg/Include/IndustryStandard/*Pldm*.h  @LiuZhiguang001 @abdattar @nicklela
 
 # NetworkPkg
 # F: NetworkPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/NetworkPkg
-# M: Maciej Rabeda <maciej.rabeda@linux.intel.com> [mrabeda]
-# R: Jiaxin Wu <jiaxin.wu@intel.com> [jiaxinwu]
-# R: Siyuan Fu <siyuan.fu@intel.com> [sfu5]
-/NetworkPkg/**  @jiaxinwu @sfu5
+# R: Saloni Kasbekar <saloni.kasbekar@intel.com> [SaloniKasbekar]
+# R: Zachary Clark-williams <zachary.clark-williams@intel.com> [Zclarkwilliams]
+/NetworkPkg/**  @SaloniKasbekar @Zclarkwilliams
 
 # OvmfPkg
 # F: OvmfPkg/
 # W: http://www.tianocore.org/ovmf/
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
 # M: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
-# R: Jordan Justen <jordan.l.justen@intel.com> [jljusten]
 # R: Gerd Hoffmann <kraxel@redhat.com> [kraxel]
 # S: Maintained
-/OvmfPkg/**   @jljusten @kraxel
+/OvmfPkg/**   @kraxel
 
 # OvmfPkg: bhyve-related modules
 # F: OvmfPkg/Bhyve/
@@ -619,79 +615,73 @@
 # F: OvmfPkg/Library/ResetSystemLib/BaseResetShutdownBhyve.c
 # F: OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibBhyve.inf
 # R: Rebecca Cran <rebecca@bsdio.com> [bcran]
-# R: Peter Grehan <grehan@freebsd.org> [grehan-freebsd]
-/OvmfPkg/Bhyve/**                                            @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Include/IndustryStandard/Bhyve.h                    @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Include/Library/BhyveFwCtlLib.h                     @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.c        @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.inf      @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/BhyveFwCtlLib/**                            @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/PlatformBootManagerLibBhyve/**              @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownBhyve.c     @jljusten @kraxel @bcran @grehan-freebsd
-/OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibBhyve.inf  @jljusten @kraxel @bcran @grehan-freebsd
+# R: Corvin Köhne <corvink@freebsd.org> [corvink]
+/OvmfPkg/Bhyve/**                                            @kraxel @bcran @corvink
+/OvmfPkg/Include/IndustryStandard/Bhyve.h                    @kraxel @bcran @corvink
+/OvmfPkg/Include/Library/BhyveFwCtlLib.h                     @kraxel @bcran @corvink
+/OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.c        @kraxel @bcran @corvink
+/OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLibBhyve.inf      @kraxel @bcran @corvink
+/OvmfPkg/Library/BhyveFwCtlLib/**                            @kraxel @bcran @corvink
+#/OvmfPkg/Library/PciHostBridgeLibScan/**                     @kraxel @bcran @corvink
+/OvmfPkg/Library/PlatformBootManagerLibBhyve/**              @kraxel @bcran @corvink
+/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownBhyve.c     @kraxel @bcran @corvink
+/OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibBhyve.inf  @kraxel @bcran @corvink
 
 # OvmfPkg: cloudhv-related modules
 # F: OvmfPkg/CloudHv/
 # F: OvmfPkg/Include/IndustryStandard/CloudHv.h
-# R: Sebastien Boeuf <sebastien.boeuf@intel.com> [sboeuf]
-/OvmfPkg/CloudHv/**                          @jljusten @kraxel @sboeuf
-/OvmfPkg/Include/IndustryStandard/CloudHv.h  @jljusten @kraxel @sboeuf
+# R: Jianyong Wu <jianyong.wu@arm.com> [jongwu]
+# R: Anatol Belski <anbelski@linux.microsoft.com> [weltling]
+/OvmfPkg/CloudHv/**                          @kraxel @jongwu @weltling
+/OvmfPkg/Include/IndustryStandard/CloudHv.h  @kraxel @jongwu @weltling
 
 # OvmfPkg: microvm-related modules
 # F: OvmfPkg/Microvm/
 # F: OvmfPkg/Include/IndustryStandard/Microvm.h
 # F: OvmfPkg/Library/ResetSystemLib/*Microvm.*
 # R: Gerd Hoffmann <kraxel@redhat.com> [kraxel]
-/OvmfPkg/Microvm/**                          @jljusten @kraxel
-/OvmfPkg/Include/IndustryStandard/Microvm.h  @jljusten @kraxel
-/OvmfPkg/Library/ResetSystemLib/*Microvm.*   @jljusten @kraxel
-
-# OvmfPkg: CSM modules
-# F: OvmfPkg/Csm/
-# R: David Woodhouse <dwmw2@infradead.org> [dwmw2]
-/OvmfPkg/Csm/**  @jljusten @kraxel @dwmw2
+/OvmfPkg/Microvm/**                          @kraxel
+/OvmfPkg/Include/IndustryStandard/Microvm.h  @kraxel
+/OvmfPkg/Library/ResetSystemLib/*Microvm.*   @kraxel
 
 # OvmfPkg: Confidential Computing
 # F: OvmfPkg/AmdSev/
 # F: OvmfPkg/AmdSevDxe/
 # F: OvmfPkg/Include/Guid/ConfidentialComputingSecret.h
 # F: OvmfPkg/Include/Library/MemEncryptSevLib.h
-# F: OvmfPkg/IoMmuDxe/AmdSevIoMmu.*
+# F: OvmfPkg/IoMmuDxe/CcIoMmu.*
 # F: OvmfPkg/Library/BaseMemEncryptSevLib/
-# F: OvmfPkg/Library/PlatformBootManagerLibGrub/
-# F: OvmfPkg/Library/VmgExitLib/
+# F: OvmfPkg/Library/CcExitLib/
 # F: OvmfPkg/PlatformPei/AmdSev.c
 # F: OvmfPkg/ResetVector/
 # F: OvmfPkg/Sec/
-# R: Brijesh Singh <brijesh.singh@amd.com> [codomania]
 # R: Erdem Aktas <erdemaktas@google.com> [ruleof2]
-# R: James Bottomley <jejb@linux.ibm.com> [jejb]
 # R: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
 # R: Min Xu <min.m.xu@intel.com> [mxu9]
 # R: Tom Lendacky <thomas.lendacky@amd.com> [tlendacky]
-/OvmfPkg/AmdSev/**                                   @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/AmdSevDxe/**                                @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Include/Guid/ConfidentialComputingSecret.h  @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Include/Library/MemEncryptSevLib.h          @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/IoMmuDxe/AmdSevIoMmu.*                      @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Library/BaseMemEncryptSevLib/**             @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Library/PlatformBootManagerLibGrub/**       @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Library/VmgExitLib/**                       @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/PlatformPei/AmdSev.c                        @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/ResetVector/**                              @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
-/OvmfPkg/Sec/**                                      @jljusten @kraxel @codomania @ruleof2 @jejb @jyao1 @mxu9 @tlendacky
+# R: Michael Roth <michael.roth@amd.com> [mdroth]
+/OvmfPkg/AmdSev/**                                   @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/AmdSevDxe/**                                @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/Include/Guid/ConfidentialComputingSecret.h  @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/Include/Library/MemEncryptSevLib.h          @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/IoMmuDxe/CcIoMmu.*                          @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/Library/BaseMemEncryptSevLib/**             @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/Library/CcExitLib/**                        @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/PlatformPei/AmdSev.c                        @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/ResetVector/**                              @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
+/OvmfPkg/Sec/**                                      @kraxel @ruleof2 @jyao1 @mxu9 @tlendacky @mdroth
 
 # OvmfPkg: FDT related modules
 # F: OvmfPkg/Fdt
 # R: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # R: Gerd Hoffmann <kraxel@redhat.com> [kraxel]
 # R: Abner Chang <abner.chang@amd.com> [changab]
-/OvmfPkg/Fdt/**  @jljusten @kraxel @leiflindholm @changab
+/OvmfPkg/Fdt/**  @kraxel @leiflindholm @changab
 
 # OvmfPkg: LsiScsi driver
 # F: OvmfPkg/LsiScsiDxe/
-# R: Gary Lin <gary.lin@hpe.com> [lcp]
-/OvmfPkg/LsiScsiDxe/**   @jljusten @kraxel @lcp
+# R: Gary Lin <glin@suse.com> [lcp]
+/OvmfPkg/LsiScsiDxe/**   @kraxel @lcp
 
 # OvmfPkg: TCG- and TPM2-related modules
 # F: OvmfPkg/Include/IndustryStandard/QemuTpm.h
@@ -700,11 +690,11 @@
 # F: OvmfPkg/PlatformPei/ClearCache.c
 # F: OvmfPkg/Tcg/
 # R: Marc-André Lureau <marcandre.lureau@redhat.com> [elmarco]
-# R: Stefan Berger <stefanb@linux.ibm.com> [stefanberger]
-/OvmfPkg/Include/IndustryStandard/QemuTpm.h            @jljusten @kraxel @elmarco @stefanberger
-/OvmfPkg/Library/Tcg2PhysicalPresenceLib*/**           @jljusten @kraxel @elmarco @stefanberger
-/OvmfPkg/PlatformPei/ClearCache.c                      @jljusten @kraxel @elmarco @stefanberger
-/OvmfPkg/Tcg/**                                        @jljusten @kraxel @elmarco @stefanberger
+/OvmfPkg/Include/IndustryStandard/QemuTpm.h            @kraxel @elmarco
+#/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @elmarco
+/OvmfPkg/Library/Tcg2PhysicalPresenceLib*/**           @kraxel @elmarco
+/OvmfPkg/PlatformPei/ClearCache.c                      @kraxel @elmarco
+/OvmfPkg/Tcg/**                                        @kraxel @elmarco
 
 # OvmfPkg: Xen-related modules
 # F: OvmfPkg/Include/Guid/XenBusRootDevice.h
@@ -732,41 +722,44 @@
 # F: OvmfPkg/XenPlatformPei/
 # F: OvmfPkg/XenPvBlkDxe/
 # F: OvmfPkg/XenResetVector/
-# R: Anthony Perard <anthony.perard@citrix.com> [sheep]
-# R: Julien Grall <julien@xen.org> [jgrall]
-/OvmfPkg/Include/Guid/XenBusRootDevice.h               @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Guid/XenInfo.h                        @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/IndustryStandard/Xen/**               @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Library/XenHypercallLib.h             @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Library/XenIoMmioLib.h                @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Library/XenPlatformLib.h              @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Protocol/XenBus.h                     @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Include/Protocol/XenIo.h                      @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Library/XenConsoleSerialPortLib/**            @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Library/XenHypercallLib/**                    @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Library/XenIoMmioLib/**                       @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Library/XenPlatformLib/**                     @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/Library/XenRealTimeClockLib/**                @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/OvmfXen.*                                     @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/OvmfXenElfHeaderGenerator.c                   @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/SmbiosPlatformDxe/*Xen*                       @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenAcpiPlatformDxe/**                         @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenBusDxe/**                                  @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenIoPciDxe/**                                @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenIoPvhDxe/**                                @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenPlatformPei/**                             @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenPvBlkDxe/**                                @jljusten @kraxel @sheep @jgrall
-/OvmfPkg/XenResetVector/**                             @jljusten @kraxel @sheep @jgrall
-#
-# ATTENTION: The following component does not exist anymore
-#
-#/OvmfPkg/XenTimerDxe/**                                @jljusten @kraxel @sheep julien@xen.org
+# R: Anthony Perard <anthony.perard@citrix.com> [tperard]
+/OvmfPkg/Include/Guid/XenBusRootDevice.h               @kraxel @tperard
+/OvmfPkg/Include/Guid/XenInfo.h                        @kraxel @tperard
+/OvmfPkg/Include/IndustryStandard/Xen/**               @kraxel @tperard
+/OvmfPkg/Include/Library/XenHypercallLib.h             @kraxel @tperard
+/OvmfPkg/Include/Library/XenIoMmioLib.h                @kraxel @tperard
+/OvmfPkg/Include/Library/XenPlatformLib.h              @kraxel @tperard
+/OvmfPkg/Include/Protocol/XenBus.h                     @kraxel @tperard
+/OvmfPkg/Include/Protocol/XenIo.h                      @kraxel @tperard
+#/OvmfPkg/Library/PciHostBridgeLibScan/**               @kraxel @tperard
+#/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @tperard
+/OvmfPkg/Library/XenConsoleSerialPortLib/**            @kraxel @tperard
+/OvmfPkg/Library/XenHypercallLib/**                    @kraxel @tperard
+/OvmfPkg/Library/XenIoMmioLib/**                       @kraxel @tperard
+/OvmfPkg/Library/XenPlatformLib/**                     @kraxel @tperard
+/OvmfPkg/Library/XenRealTimeClockLib/**                @kraxel @tperard
+/OvmfPkg/OvmfXen.*                                     @kraxel @tperard
+/OvmfPkg/OvmfXenElfHeaderGenerator.c                   @kraxel @tperard
+/OvmfPkg/SmbiosPlatformDxe/*Xen*                       @kraxel @tperard
+/OvmfPkg/XenAcpiPlatformDxe/**                         @kraxel @tperard
+/OvmfPkg/XenBusDxe/**                                  @kraxel @tperard
+/OvmfPkg/XenIoPciDxe/**                                @kraxel @tperard
+/OvmfPkg/XenIoPvhDxe/**                                @kraxel @tperard
+/OvmfPkg/XenPlatformPei/**                             @kraxel @tperard
+/OvmfPkg/XenPvBlkDxe/**                                @kraxel @tperard
+/OvmfPkg/XenResetVector/**                             @kraxel @tperard
 
-# Files common to Bhyve and Xen
-/OvmfPkg/Library/PciHostBridgeLibScan/**               @jljusten @kraxel @bcran @grehan-freebsd @sheep @jgrall
+# OvmfPkg: Files common to Byhve AND XEN
+/OvmfPkg/Library/PciHostBridgeLibScan/**               @kraxel @bcran @corvink @tperard
 
-# Files common to TCG and XEN
-/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @jljusten @kraxel @elmarco @stefanberger @sheep @jgrall
+# OvmfPkg: Files common to TCG and XEN
+/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @elmarco @tperard
+
+# OvmfPkg: RISC-V Qemu Virt Platform
+# F: OvmfPkg/RiscVVirt
+# M: Sunil V L <sunilvl@ventanamicro.com> [vlsunil]
+# R: Andrei Warkentin <andrei.warkentin@intel.com> [andreiw]
+/OvmfPkg/RiscVVirt/**  @andreiw @kraxel
 
 # PcAtChipsetPkg
 # F: PcAtChipsetPkg/
@@ -784,14 +777,14 @@
 # RedfishPkg: Redfish related modules
 # F: RedfishPkg/
 # M: Abner Chang <abner.chang@amd.com> [changab]
-# R: Nickle Wang <nickle@csie.io> [nicklela]
-/RedfishPkg/**  @nicklela
+# M: Nickle Wang <nicklew@nvidia.com> [nicklela]
+# R: Igor Kulchytskyy <igork@ami.com> [igorkulchytskyy]
+/RedfishPkg/**  @igorkulchytskyy
 
 # SecurityPkg
 # F: SecurityPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/SecurityPkg
 # M: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
-# M: Jian J Wang <jian.j.wang@intel.com> [jwang36]
 
 # SecurityPkg: Secure boot related modules
 # F: SecurityPkg/Library/DxeImageVerificationLib/
@@ -804,55 +797,55 @@
 
 # SecurityPkg: Tcg related modules
 # F: SecurityPkg/Tcg/
-# R: Qi Zhang <qi1.zhang@intel.com> [qizhangz]
 # R: Rahul Kumar <rahul1.kumar@intel.com> [rahul1-kumar]
-/SecurityPkg/Tcg/** @qizhangz @rahul1-kumar
+/SecurityPkg/Tcg/** @rahul1-kumar
 
 # ShellPkg
 # F: ShellPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/ShellPkg
-# M: Ray Ni <ray.ni@intel.com> [niruiyu]
 # M: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
 
 # SignedCapsulePkg
 # F: SignedCapsulePkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/SignedCapsulePkg
-# M: Jian J Wang <jian.j.wang@intel.com> [jwang36]
 
 # SourceLevelDebugPkg
 # F: SourceLevelDebugPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/SourceLevelDebugPkg
-# M: Hao A Wu <hao.a.wu@intel.com> [hwu25]
 
 # StandaloneMmPkg
 # F: StandaloneMmPkg/
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
 # M: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
-# M: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
-# R: Supreeth Venkatesh <supreeth.venkatesh@arm.com> [supven01]
-/StandaloneMmPkg/**  @supven01
+# M: Ray Ni <ray.ni@intel.com> [niruiyu]
 
 # UefiCpuPkg
 # F: UefiCpuPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/UefiCpuPkg
-# M: Eric Dong <eric.dong@intel.com> [ydong10]
 # M: Ray Ni <ray.ni@intel.com> [niruiyu]
 # R: Rahul Kumar <rahul1.kumar@intel.com> [rahul1-kumar]
-/UefiCpuPkg/**  @rahul1-kumar
+# R: Gerd Hoffmann <kraxel@redhat.com> [kraxel]
+/UefiCpuPkg/**  @rahul1-kumar @kraxel
 
 # UefiCpuPkg: Sec related modules
 # F: UefiCpuPkg/SecCore/
 # F: UefiCpuPkg/ResetVector/
-# R: Debkumar De <debkumar.de@intel.com> [dde01]
 # R: Catharine West <catharine.west@intel.com> [catharine-intl]
-/UefiCpuPkg/SecCore/**      @rahul1-kumar @dde01 @catharine-intl
-/UefiCpuPkg/ResetVector/**  @rahul1-kumar @dde01 @catharine-intl
+/UefiCpuPkg/SecCore/**      @rahul1-kumar @kraxel @catharine-intl
+/UefiCpuPkg/ResetVector/**  @rahul1-kumar @kraxel @catharine-intl
+
+# UefiCpuPkg: AMD related files
+# F: UefiCpuPkg/Library/MmSaveStateLib/*Amd*.*
+# F: UefiCpuPkg/Library/SmmCpuFeaturesLib/*Amd*.*
+# M: Abdul Lateef Attar <AbdulLateef.Attar@amd.com> [abdattar]
+# R: Abner Chang <abner.chang@amd.com> [changab]
+/UefiCpuPkg/Library/MmSaveStateLib/*Amd*.*     @rahul1-kumar @kraxel @changab
+/UefiCpuPkg/Library/SmmCpuFeaturesLib/*Amd*.*  @rahul1-kumar @kraxel @changab
 
 # UefiPayloadPkg
 # F: UefiPayloadPkg/
 # W: https://github.com/tianocore/tianocore.github.io/wiki/UefiPayloadPkg
 # M: Guo Dong <guo.dong@intel.com> [gdong1]
-# M: Ray Ni <ray.ni@intel.com> [niruiyu]
 # M: Sean Rhodes <sean@starlabs.systems> [Sean-StarLabs]
 # M: James Lu <james.lu@intel.com> [jameslu8]
 # R: Gua Guo <gua.guo@intel.com> [gguo11837463]
@@ -864,7 +857,6 @@
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# R: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
 # S: Maintained
-/UnitTestFrameworkPkg/**  @spbrogan @corthon
+/UnitTestFrameworkPkg/**  @spbrogan
 

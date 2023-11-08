@@ -57,6 +57,7 @@ UINT8    *mBootPerformanceTable;
 UINTN    mBootPerformanceTableSize;
 BOOLEAN  mPeiPhase = FALSE;
 BOOLEAN  mDxePhase = FALSE;
+UINT64   mResetEnd = 0;
 
 PERF_SUMMARY_DATA   SummaryData       = { 0 }; ///< Create the SummaryData structure and init. to ZERO.
 MEASUREMENT_RECORD  *mMeasurementList = NULL;
@@ -128,17 +129,22 @@ EFI_STATUS
 GetBootPerformanceTable (
   )
 {
+  EFI_STATUS                  Status;
   FIRMWARE_PERFORMANCE_TABLE  *FirmwarePerformanceTable;
 
   FirmwarePerformanceTable = (FIRMWARE_PERFORMANCE_TABLE *)EfiLocateFirstAcpiTable (
                                                              EFI_ACPI_5_0_FIRMWARE_PERFORMANCE_DATA_TABLE_SIGNATURE
                                                              );
   if (FirmwarePerformanceTable == NULL) {
-    ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_DP_GET_ACPI_FPDT_FAIL), mDpHiiHandle);
-    return EFI_NOT_FOUND;
+    Status = EfiGetSystemConfigurationTable (&gEdkiiFpdtExtendedFirmwarePerformanceGuid, (VOID **)&mBootPerformanceTable);
+    if (EFI_ERROR (Status)) {
+      ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_DP_GET_ACPI_FPDT_FAIL), mDpHiiHandle);
+      return EFI_NOT_FOUND;
+    }
+  } else {
+    mBootPerformanceTable = (UINT8 *)(UINTN)FirmwarePerformanceTable->BootPointerRecord.BootPerformanceTablePointer;
   }
 
-  mBootPerformanceTable     = (UINT8 *)(UINTN)FirmwarePerformanceTable->BootPointerRecord.BootPerformanceTablePointer;
   mBootPerformanceTableSize = ((BOOT_PERFORMANCE_TABLE *)mBootPerformanceTable)->Header.Length;
 
   return EFI_SUCCESS;
@@ -542,6 +548,8 @@ BuildMeasurementList (
 {
   EFI_ACPI_5_0_FPDT_PERFORMANCE_RECORD_HEADER  *RecordHeader;
   UINT8                                        *PerformanceTablePtr;
+  UINT8                                        *BasicBootTablePtr;
+  UINT64                                       ResetEnd;
   UINT16                                       StartProgressId;
   UINTN                                        TableLength;
   UINT8                                        *StartRecordEvent;
@@ -550,6 +558,17 @@ BuildMeasurementList (
   mMeasurementList = AllocateZeroPool (mBootPerformanceTableSize);
   if (mMeasurementList == NULL) {
     return EFI_OUT_OF_RESOURCES;
+  }
+
+  //
+  // Update the ResetEnd which was logged at the beginning of firmware image execution
+  //
+  TableLength       = sizeof (EFI_ACPI_5_0_FPDT_PERFORMANCE_TABLE_HEADER);
+  BasicBootTablePtr = (mBootPerformanceTable + TableLength);
+  ResetEnd          = ((EFI_ACPI_5_0_FPDT_FIRMWARE_BASIC_BOOT_RECORD *)BasicBootTablePtr)->ResetEnd;
+
+  if (ResetEnd > 0) {
+    mResetEnd = ResetEnd;
   }
 
   TableLength         = sizeof (BOOT_PERFORMANCE_TABLE);

@@ -96,7 +96,7 @@
 
     ## options defined .pytool/Plugin/SpellCheck
     "SpellCheck": {
-        "AuditOnly": False,           # Fails right now with over 270 errors
+        "AuditOnly": True,
         "IgnoreFiles": [],           # use gitignore syntax to ignore errors in matching files
         "ExtendWords": [
             "acpiview",
@@ -125,5 +125,13 @@
         ],           # words to extend to the dictionary for this package
         "IgnoreStandardPaths": [],   # Standard Plugin defined paths that should be ignore
         "AdditionalIncludePaths": [] # Additional paths to spell check (wildcards supported)
+    },
+
+    "DebugMacroCheck": {
+      "StringSubstitutions": {
+          # DynamicTablesPkg/Include/ConfigurationManagerObject.h
+          # Reason: Expansion of macro that contains a print specifier.
+          "FMT_CM_OBJECT_ID": "0x%lx"
+      }
     }
 }

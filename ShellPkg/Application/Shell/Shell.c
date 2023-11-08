@@ -4,8 +4,9 @@
   Copyright (c) 2009 - 2019, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.<BR>
   Copyright 2015-2018 Dell Technologies.<BR>
-  SPDX-License-Identifier: BSD-2-Clause-Patent
+  Copyright (C) 2023, Apple Inc. All rights reserved.<BR>
 
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "Shell.h"
@@ -990,7 +991,7 @@ ProcessCommandLine (
   ShellInfoObject.ShellInitSettings.BitUnion.Bits.Delay        = FALSE;
   ShellInfoObject.ShellInitSettings.BitUnion.Bits.Exit         = FALSE;
   ShellInfoObject.ShellInitSettings.BitUnion.Bits.NoNest       = FALSE;
-  ShellInfoObject.ShellInitSettings.Delay                      = 5;
+  ShellInfoObject.ShellInitSettings.Delay                      = PcdGet32 (PcdShellDefaultDelay);
 
   //
   // Start LoopVar at 0 to parse only optional arguments at Argv[0]
@@ -1300,6 +1301,7 @@ DoStartupScript (
   CHAR16         *FullFileStringPath;
   UINTN          NewSize;
 
+  CalleeStatus    = EFI_SUCCESS;
   Key.UnicodeChar = CHAR_NULL;
   Key.ScanCode    = 0;
 
@@ -2943,7 +2945,7 @@ RunScriptFileHandle (
   ASSERT (!ShellCommandGetScriptExit ());
 
   PreScriptEchoState = ShellCommandGetEchoState ();
-  PrintBuffSize      = PcdGet16 (PcdShellPrintBufferSize);
+  PrintBuffSize      = PcdGet32 (PcdShellPrintBufferSize);
 
   NewScriptFile = (SCRIPT_FILE *)AllocateZeroPool (sizeof (SCRIPT_FILE));
   if (NewScriptFile == NULL) {

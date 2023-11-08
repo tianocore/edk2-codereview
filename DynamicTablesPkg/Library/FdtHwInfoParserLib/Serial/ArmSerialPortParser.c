@@ -1,7 +1,7 @@
 /** @file
   Arm Serial Port Parser.
 
-  Copyright (c) 2021, ARM Limited. All rights reserved.<BR>
+  Copyright (c) 2021 - 2023, Arm Limited. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
@@ -278,7 +278,7 @@ GetSerialConsoleNode (
     return EFI_INVALID_PARAMETER;
   }
 
-  // The "chosen" node resides at the the root of the DT. Fetch it.
+  // The "chosen" node resides at the root of the DT. Fetch it.
   ChosenNode = fdt_path_offset (Fdt, "/chosen");
   if (ChosenNode < 0) {
     return EFI_NOT_FOUND;
@@ -290,7 +290,7 @@ GetSerialConsoleNode (
   }
 
   // Determine the actual path length, as a colon terminates the path.
-  Path = ScanMem8 (Prop, ':', PropSize);
+  Path = ScanMem8 (Prop, PropSize, ':');
   if (Path == NULL) {
     PathLen = (UINT32)AsciiStrLen (Prop);
   } else {

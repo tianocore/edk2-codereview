@@ -81,7 +81,8 @@ GLOBAL_REMOVE_IF_UNREFERENCED MACHINE_TYPE_INFO  mMachineTypeInfo[] = {
   { EFI_IMAGE_MACHINE_IA64,           L"IA64"    },
   { EFI_IMAGE_MACHINE_X64,            L"X64"     },
   { EFI_IMAGE_MACHINE_ARMTHUMB_MIXED, L"ARM"     },
-  { EFI_IMAGE_MACHINE_AARCH64,        L"AARCH64" }
+  { EFI_IMAGE_MACHINE_AARCH64,        L"AARCH64" },
+  { EFI_IMAGE_MACHINE_RISCV64,        L"RISCV64" },
 };
 
 UINT16  mDxeCoreImageMachineType = 0;
@@ -679,7 +680,9 @@ CoreLoadPeImage (
                    );
       }
     } else {
-      if ((Image->ImageContext.ImageAddress >= 0x100000) || Image->ImageContext.RelocationsStripped) {
+      if ((PcdGetBool (PcdImageLargeAddressLoad) && ((Image->ImageContext.ImageAddress) >= 0x100000)) ||
+          Image->ImageContext.RelocationsStripped)
+      {
         Status = CoreAllocatePages (
                    AllocateAddress,
                    (EFI_MEMORY_TYPE)(Image->ImageContext.ImageCodeMemoryType),
@@ -1399,6 +1402,16 @@ CoreLoadImageCommon (
   }
 
   //
+  // Check whether we are loading a runtime image that lacks support for
+  // IBT/BTI landing pads.
+  //
+  if ((Image->ImageContext.ImageCodeMemoryType == EfiRuntimeServicesCode) &&
+      ((Image->ImageContext.DllCharacteristicsEx & EFI_IMAGE_DLLCHARACTERISTICS_EX_FORWARD_CFI_COMPAT) == 0))
+  {
+    gMemoryAttributesTableForwardCfi = FALSE;
+  }
+
+  //
   // Reinstall loaded image protocol to fire any notifications
   //
   Status = CoreReinstallProtocolInterface (
@@ -1741,7 +1754,7 @@ CoreStartImage (
   if ((Image->ExitDataSize != 0) || (Image->ExitData != NULL)) {
     DEBUG ((DEBUG_LOAD, "StartImage: ExitDataSize %d, ExitData %p", (UINT32)Image->ExitDataSize, Image->ExitData));
     if (Image->ExitData != NULL) {
-      DEBUG ((DEBUG_LOAD, " (%hs)", Image->ExitData));
+      DEBUG ((DEBUG_LOAD, " (%s)", Image->ExitData));
     }
 
     DEBUG ((DEBUG_LOAD, "\n"));

@@ -1,6 +1,6 @@
 /** @file
   Base PE/COFF loader supports loading any PE32/PE32+ or TE image, but
-  only supports relocating IA32, x64, IPF, ARM, RISC-V and EBC images.
+  only supports relocating IA32, x64, IPF, ARM, RISC-V, LoongArch and EBC images.
 
   Caution: This file requires additional review when modified.
   This library will have external input - PE/COFF image.
@@ -18,6 +18,7 @@
   Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
   Portions copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
   Portions Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+  Portions Copyright (c) 2022, Loongson Technology Corporation Limited. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -307,10 +308,11 @@ PeCoffLoaderGetPeHeader (
       //
       // Use PE32 offset
       //
-      ImageContext->ImageType        = Hdr.Pe32->OptionalHeader.Subsystem;
-      ImageContext->ImageSize        = (UINT64)Hdr.Pe32->OptionalHeader.SizeOfImage;
-      ImageContext->SectionAlignment = Hdr.Pe32->OptionalHeader.SectionAlignment;
-      ImageContext->SizeOfHeaders    = Hdr.Pe32->OptionalHeader.SizeOfHeaders;
+      ImageContext->ImageType          = Hdr.Pe32->OptionalHeader.Subsystem;
+      ImageContext->ImageSize          = (UINT64)Hdr.Pe32->OptionalHeader.SizeOfImage;
+      ImageContext->SectionAlignment   = Hdr.Pe32->OptionalHeader.SectionAlignment;
+      ImageContext->SizeOfHeaders      = Hdr.Pe32->OptionalHeader.SizeOfHeaders;
+      ImageContext->DllCharacteristics = Hdr.Pe32->OptionalHeader.DllCharacteristics;
     } else if (Hdr.Pe32->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
       //
       // 1. Check FileHeader.NumberOfRvaAndSizes filed.
@@ -428,10 +430,11 @@ PeCoffLoaderGetPeHeader (
       //
       // Use PE32+ offset
       //
-      ImageContext->ImageType        = Hdr.Pe32Plus->OptionalHeader.Subsystem;
-      ImageContext->ImageSize        = (UINT64)Hdr.Pe32Plus->OptionalHeader.SizeOfImage;
-      ImageContext->SectionAlignment = Hdr.Pe32Plus->OptionalHeader.SectionAlignment;
-      ImageContext->SizeOfHeaders    = Hdr.Pe32Plus->OptionalHeader.SizeOfHeaders;
+      ImageContext->ImageType          = Hdr.Pe32Plus->OptionalHeader.Subsystem;
+      ImageContext->ImageSize          = (UINT64)Hdr.Pe32Plus->OptionalHeader.SizeOfImage;
+      ImageContext->SectionAlignment   = Hdr.Pe32Plus->OptionalHeader.SectionAlignment;
+      ImageContext->SizeOfHeaders      = Hdr.Pe32Plus->OptionalHeader.SizeOfHeaders;
+      ImageContext->DllCharacteristics = Hdr.Pe32Plus->OptionalHeader.DllCharacteristics;
     } else {
       ImageContext->ImageError = IMAGE_ERROR_INVALID_MACHINE_TYPE;
       return RETURN_UNSUPPORTED;
@@ -544,8 +547,9 @@ PeCoffLoaderGetPeHeader (
   Retrieves information about a PE/COFF image.
 
   Computes the PeCoffHeaderOffset, IsTeImage, ImageType, ImageAddress, ImageSize,
-  DestinationAddress, RelocationsStripped, SectionAlignment, SizeOfHeaders, and
-  DebugDirectoryEntryRva fields of the ImageContext structure.
+  DestinationAddress, RelocationsStripped, SectionAlignment, SizeOfHeaders,
+  DllCharacteristics, DllCharacteristicsEx and DebugDirectoryEntryRva fields of
+  the ImageContext structure.
   If ImageContext is NULL, then return RETURN_INVALID_PARAMETER.
   If the PE/COFF image accessed through the ImageRead service in the ImageContext
   structure is not a supported PE/COFF image type, then return RETURN_UNSUPPORTED.
@@ -581,6 +585,7 @@ PeCoffLoaderGetImageInfo (
   UINTN                                Size;
   UINTN                                ReadSize;
   UINTN                                Index;
+  UINTN                                NextIndex;
   UINTN                                DebugDirectoryEntryRva;
   UINTN                                DebugDirectoryEntryFileOffset;
   UINTN                                SectionHeaderOffset;
@@ -751,7 +756,42 @@ PeCoffLoaderGetImageInfo (
               ImageContext->ImageSize += DebugEntry.SizeOfData;
             }
 
-            return RETURN_SUCCESS;
+            //
+            // Implementations of GenFw before commit 60e85a39fe49071 will
+            // concatenate the debug directory entry and the codeview entry,
+            // and erroneously put the combined size into the debug directory's
+            // size field. If this is the case, no other relevant directory
+            // entries can exist, and we can terminate here.
+            //
+            NextIndex = Index + sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+            if ((NextIndex < DebugDirectoryEntry->Size) &&
+                (DebugEntry.FileOffset == (DebugDirectoryEntryFileOffset + NextIndex)))
+            {
+              break;
+            }
+
+            continue;
+          }
+
+          if (DebugEntry.Type == EFI_IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS) {
+            Size     = sizeof (EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY);
+            ReadSize = sizeof (EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY);
+            Status   = ImageContext->ImageRead (
+                                       ImageContext->Handle,
+                                       DebugEntry.FileOffset,
+                                       &Size,
+                                       &ImageContext->DllCharacteristicsEx
+                                       );
+            if (RETURN_ERROR (Status) || (Size != ReadSize)) {
+              ImageContext->ImageError = IMAGE_ERROR_IMAGE_READ;
+              if (Size != ReadSize) {
+                Status = RETURN_UNSUPPORTED;
+              }
+
+              return Status;
+            }
+
+            continue;
           }
         }
       }

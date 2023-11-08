@@ -1,6 +1,7 @@
 /** @file
   ProcessorSubClass.c
 
+  Copyright (c) 2022, Ampere Computing LLC. All rights reserved.
   Copyright (c) 2021, NUVIA Inc. All rights reserved.<BR>
   Copyright (c) 2015, Hisilicon Limited. All rights reserved.
   Copyright (c) 2015, Linaro Limited. All rights reserved.
@@ -512,7 +513,6 @@ AllocateType4AndSetProcessorInformationStrings (
   PartNumber       = STRING_TOKEN (STR_PROCESSOR_PART_NUMBER);
 
   SET_HII_STRING_IF_PCD_NOT_EMPTY (PcdProcessorManufacturer, ProcessorManu);
-  SET_HII_STRING_IF_PCD_NOT_EMPTY (PcdProcessorVersion, ProcessorVersion);
   SET_HII_STRING_IF_PCD_NOT_EMPTY (PcdProcessorAssetTag, AssetTag);
 
   if (StrLen ((CHAR16 *)FixedPcdGetPtr (PcdProcessorSerialNumber)) > 0) {
@@ -525,6 +525,12 @@ AllocateType4AndSetProcessorInformationStrings (
     HiiSetString (mHiiHandle, PartNumber, (CHAR16 *)FixedPcdGetPtr (PcdProcessorPartNumber), NULL);
   } else {
     OemUpdateSmbiosInfo (mHiiHandle, PartNumber, ProcessorPartNumType04);
+  }
+
+  if (StrLen ((CHAR16 *)FixedPcdGetPtr (PcdProcessorVersion)) > 0) {
+    HiiSetString (mHiiHandle, ProcessorVersion, (CHAR16 *)FixedPcdGetPtr (PcdProcessorVersion), NULL);
+  } else {
+    OemUpdateSmbiosInfo (mHiiHandle, ProcessorVersion, ProcessorVersionType04);
   }
 
   // Processor Designation
@@ -735,7 +741,7 @@ AddSmbiosProcessorTypeTable (
     DEBUG ((
       DEBUG_ERROR,
       "[%a]:[%dL] Smbios Type04 Table Log Failed! %r \n",
-      __FUNCTION__,
+      __func__,
       DEBUG_LINE_NUMBER,
       Status
       ));

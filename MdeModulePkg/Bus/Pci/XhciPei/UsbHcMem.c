@@ -3,6 +3,7 @@ PEIM to produce gPeiUsb2HostControllerPpiGuid based on gPeiUsbControllerPpiGuid
 which is used to enable recovery function from USB Drivers.
 
 Copyright (c) 2014 - 2016, Intel Corporation. All rights reserved.<BR>
+Copyright (C) 2022 Advanced Micro Devices, Inc. All rights reserved.<BR>
 
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -189,6 +190,7 @@ UsbHcAllocMemFromBlock (
   @param  Pool          The memory pool of the host controller.
   @param  Mem           The pointer to host memory.
   @param  Size          The size of the memory region.
+  @param  Alignment     Alignment the size to USBHC_MEM_UNIT bytes.
 
   @return               The pci memory address
 
@@ -197,7 +199,8 @@ EFI_PHYSICAL_ADDRESS
 UsbHcGetPciAddrForHostAddr (
   IN USBHC_MEM_POOL  *Pool,
   IN VOID            *Mem,
-  IN UINTN           Size
+  IN UINTN           Size,
+  IN BOOLEAN         Alignment
   )
 {
   USBHC_MEM_BLOCK       *Head;
@@ -206,8 +209,12 @@ UsbHcGetPciAddrForHostAddr (
   EFI_PHYSICAL_ADDRESS  PhyAddr;
   UINTN                 Offset;
 
-  Head      = Pool->Head;
-  AllocSize = USBHC_MEM_ROUND (Size);
+  Head = Pool->Head;
+  if (Alignment) {
+    AllocSize = USBHC_MEM_ROUND (Size);
+  } else {
+    AllocSize = Size;
+  }
 
   if (Mem == NULL) {
     return 0;
@@ -238,6 +245,7 @@ UsbHcGetPciAddrForHostAddr (
   @param  Pool          The memory pool of the host controller.
   @param  Mem           The pointer to pci memory.
   @param  Size          The size of the memory region.
+  @param  Alignment     Alignment the size to USBHC_MEM_UNIT bytes.
 
   @return               The host memory address
 
@@ -246,7 +254,8 @@ EFI_PHYSICAL_ADDRESS
 UsbHcGetHostAddrForPciAddr (
   IN USBHC_MEM_POOL  *Pool,
   IN VOID            *Mem,
-  IN UINTN           Size
+  IN UINTN           Size,
+  IN BOOLEAN         Alignment
   )
 {
   USBHC_MEM_BLOCK       *Head;
@@ -255,8 +264,12 @@ UsbHcGetHostAddrForPciAddr (
   EFI_PHYSICAL_ADDRESS  HostAddr;
   UINTN                 Offset;
 
-  Head      = Pool->Head;
-  AllocSize = USBHC_MEM_ROUND (Size);
+  Head = Pool->Head;
+  if (Alignment) {
+    AllocSize = USBHC_MEM_ROUND (Size);
+  } else {
+    AllocSize = Size;
+  }
 
   if (Mem == NULL) {
     return 0;
@@ -366,6 +379,32 @@ UsbHcInitMemPool (
 }
 
 /**
+  Unlink the memory block from the pool's list.
+
+  @param  Head           The block list head of the memory's pool.
+  @param  BlockToUnlink  The memory block to unlink.
+
+**/
+VOID
+UsbHcUnlinkMemBlock (
+  IN USBHC_MEM_BLOCK  *Head,
+  IN USBHC_MEM_BLOCK  *BlockToUnlink
+  )
+{
+  USBHC_MEM_BLOCK  *Block;
+
+  ASSERT ((Head != NULL) && (BlockToUnlink != NULL));
+
+  for (Block = Head; Block != NULL; Block = Block->Next) {
+    if (Block->Next == BlockToUnlink) {
+      Block->Next         = BlockToUnlink->Next;
+      BlockToUnlink->Next = NULL;
+      break;
+    }
+  }
+}
+
+/**
   Release the memory management pool.
 
   @param  Pool          The USB memory pool to free.
@@ -386,7 +425,7 @@ UsbHcFreeMemPool (
   // first block.
   //
   for (Block = Pool->Head->Next; Block != NULL; Block = Pool->Head->Next) {
-    // UsbHcUnlinkMemBlock (Pool->Head, Block);
+    UsbHcUnlinkMemBlock (Pool->Head, Block);
     UsbHcFreeMemBlock (Pool, Block);
   }
 
@@ -532,7 +571,7 @@ UsbHcFreeMem (
   // Release the current memory block if it is empty and not the head
   //
   if ((Block != Head) && UsbHcIsMemBlockEmpty (Block)) {
-    // UsbHcUnlinkMemBlock (Head, Block);
+    UsbHcUnlinkMemBlock (Head, Block);
     UsbHcFreeMemBlock (Pool, Block);
   }
 }

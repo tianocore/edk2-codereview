@@ -21,7 +21,7 @@ extern   ASM_PFX(PcdGet32 (PcdFspReservedBufferSize))
 ; Following functions will be provided in PlatformSecLib
 ;
 extern ASM_PFX(AsmGetFspBaseAddress)
-extern ASM_PFX(AsmGetFspInfoHeader)
+extern ASM_PFX(AsmGetFspInfoHeaderNoStack)
 ;extern ASM_PFX(LoadMicrocode)    ; @todo: needs a weak implementation
 extern ASM_PFX(SecPlatformInit)   ; @todo: needs a weak implementation
 extern ASM_PFX(SecCarInit)
@@ -87,6 +87,14 @@ struc LoadMicrocodeParamsFsp24
     .size:
 endstruc
 
+%macro CALL_RDI  1
+
+  mov     rdi,  %%ReturnAddress
+  jmp     %1
+%%ReturnAddress:
+
+%endmacro
+
 ;
 ; @todo: The strong/weak implementation does not work.
 ;        This needs to be reviewed later.
@@ -116,8 +124,7 @@ ASM_PFX(LoadMicrocodeDefault):
    ; Inputs:
    ;   rcx -> LoadMicrocodeParams pointer
    ; Register Usage:
-   ;   rsp  Preserved
-   ;   All others destroyed
+   ;   All are destroyed
    ; Assumptions:
    ;   No memory available, stack is hard-coded and used for return address
    ;   Executed by SBSP and NBSP
@@ -128,11 +135,27 @@ ASM_PFX(LoadMicrocodeDefault):
    ;
    LOAD_RBP
 
-   cmp    rsp, 0
+   test   rsp, rsp
    jz     ParamError
-   cmp    rcx, 0
+   test   rcx, rcx
    jz     ParamError
    mov    rsp, rcx
+
+   ;
+   ; If microcode already loaded before this function, exit this function with SUCCESS.
+   ;
+   mov   ecx, MSR_IA32_BIOS_SIGN_ID
+   xor   eax, eax               ; Clear EAX
+   xor   edx, edx               ; Clear EDX
+   wrmsr                        ; Load 0 to MSR at 8Bh
+
+   mov   eax, 1
+   cpuid
+   mov   ecx, MSR_IA32_BIOS_SIGN_ID
+   rdmsr                         ; Get current microcode signature
+   xor   rax, rax
+   test  edx, edx
+   jnz   Exit2
 
    ; skip loading Microcode if the MicrocodeCodeSize is zero
    ; and report error if size is less than 2k
@@ -144,13 +167,13 @@ ASM_PFX(LoadMicrocodeDefault):
 
    ; UPD structure is compliant with FSP spec 2.4
    mov    rax, qword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeSize]
-   cmp    rax, 0
+   test   rax, rax
    jz     Exit2
    cmp    rax, 0800h
    jl     ParamError
 
    mov    rsi, qword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeAddr]
-   cmp    rsi, 0
+   test   rsi, rsi
    jnz    CheckMainHeader
 
 ParamError:
@@ -191,7 +214,7 @@ CheckMainHeader:
    cmp   ebx, dword [esi + MicrocodeHdr.MicrocodeHdrProcessor]
    jne   LoadMicrocodeDefault1
    test  edx, dword [esi + MicrocodeHdr.MicrocodeHdrFlags ]
-   jnz   LoadCheck  ; Jif signature and platform ID match
+   jnz   LoadMicrocode  ; Jif signature and platform ID match
 
 LoadMicrocodeDefault1:
    ; Check if extended header exists
@@ -224,7 +247,7 @@ CheckExtSig:
    cmp   dword [edi + ExtSig.ExtSigProcessor], ebx
    jne   LoadMicrocodeDefault2
    test  dword [edi + ExtSig.ExtSigFlags], edx
-   jnz   LoadCheck      ; Jif signature and platform ID match
+   jnz   LoadMicrocode      ; Jif signature and platform ID match
 LoadMicrocodeDefault2:
    ; Check if any more extended signatures exist
    add   edi, ExtSig.size
@@ -269,22 +292,7 @@ LoadMicrocodeDefault4:
    ; Is valid Microcode start point ?
    cmp   dword [esi + MicrocodeHdr.MicrocodeHdrVersion], 0ffffffffh
    jz    Done
-
-LoadCheck:
-   ; Get the revision of the current microcode update loaded
-   mov   ecx, MSR_IA32_BIOS_SIGN_ID
-   xor   eax, eax               ; Clear EAX
-   xor   edx, edx               ; Clear EDX
-   wrmsr                        ; Load 0 to MSR at 8Bh
-
-   mov   eax, 1
-   cpuid
-   mov   ecx, MSR_IA32_BIOS_SIGN_ID
-   rdmsr                        ; Get current microcode signature
-
-   ; Verify this microcode update is not already loaded
-   cmp   dword [esi + MicrocodeHdr.MicrocodeHdrRevision], edx
-   je    Continue
+   jmp   CheckMainHeader
 
 LoadMicrocode:
    ; EAX contains the linear address of the start of the Update Data
@@ -299,18 +307,20 @@ LoadMicrocode:
    mov   eax, 1
    cpuid
 
-Continue:
-   jmp   NextMicrocode
-
 Done:
+   mov   ecx, MSR_IA32_BIOS_SIGN_ID
+   xor   eax, eax               ; Clear EAX
+   xor   edx, edx               ; Clear EDX
+   wrmsr                        ; Load 0 to MSR at 8Bh
+
    mov   eax, 1
    cpuid
    mov   ecx, MSR_IA32_BIOS_SIGN_ID
    rdmsr                         ; Get current microcode signature
    xor   eax, eax
-   cmp   edx, 0
+   test  edx, edx
    jnz   Exit2
-   mov   eax, 0800000000000000Eh
+   mov   rax, 0800000000000000Eh
 
 Exit2:
    jmp   rbp
@@ -420,10 +430,6 @@ ASM_PFX(TempRamInitApi):
   ENABLE_SSE
   ENABLE_AVX
   ;
-  ; Save Input Parameter in YMM10
-  ;
-  SAVE_RCX
-  ;
   ; Save RBP, RBX, RSI, RDI and RSP in YMM7, YMM8 and YMM6
   ;
   SAVE_REGS
@@ -434,6 +440,22 @@ ASM_PFX(TempRamInitApi):
   SAVE_BFV  rbp
 
   ;
+  ; Save Input Parameter in YMM10
+  ;
+  cmp       rcx, 0
+  jnz       ParamValid
+
+  ;
+  ; Fall back to default UPD
+  ;
+  CALL_RDI  ASM_PFX(AsmGetFspInfoHeaderNoStack)
+  xor       rcx, rcx
+  mov       ecx,  DWORD [rax + 01Ch]      ; Read FsptImageBaseAddress
+  add       ecx,  DWORD [rax + 024h]      ; Get Cfg Region base address = FsptImageBaseAddress + CfgRegionOffset
+ParamValid:
+  SAVE_RCX
+
+  ;
   ; Save timestamp into YMM6
   ;
   rdtsc
@@ -442,17 +464,10 @@ ASM_PFX(TempRamInitApi):
   SAVE_TS   rax
 
   ;
-  ; Check Parameter
-  ;
-  cmp       rcx, 0
-  mov       rcx, 08000000000000002h
-  jz        TempRamInitExit
-
-  ;
   ; Sec Platform Init
   ;
   CALL_YMM  ASM_PFX(SecPlatformInit)
-  cmp       eax, 0
+  test      rax, rax
   jnz       TempRamInitExit
 
   ; Load microcode
@@ -464,12 +479,12 @@ ASM_PFX(TempRamInitApi):
   ; Call Sec CAR Init
   LOAD_RCX
   CALL_YMM  ASM_PFX(SecCarInit)
-  cmp       rax, 0
+  test      rax, rax
   jnz       TempRamInitExit
 
   LOAD_RCX
   CALL_YMM  ASM_PFX(EstablishStackFsp)
-  cmp       rax, 0
+  test      rax, rax
   jnz       TempRamInitExit
 
   LOAD_UCODE_STATUS rax             ; Restore microcode status if no CAR init error from SLOT 0 in YMM9 (upper 128bits).

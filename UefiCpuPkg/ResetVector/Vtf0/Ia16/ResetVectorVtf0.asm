@@ -21,25 +21,24 @@ ALIGN   16
 ; located just below 0x100000000 (4GB) in the firmware device.
 ;
 %ifdef ALIGN_TOP_TO_4K_FOR_PAGING
-    TIMES (0x1000 - ($ - EndOfPageTables) - 0x20) DB 0
+    TIMES (0x1000 - ($ - EndOfPageTables)) DB 0
+;
+; Pad the VTF0 Reset code for Bsp & Ap to 4k aligned block.
+; Some implementations may need to keep the initial Reset code
+; to be separated out from rest of the code.
+; This padding will make sure lower 4K region below 4 GB may
+; only contains few jmp instructions and data.
+;
+    TIMES (0x1000 - 0x20) DB 0
 %endif
 
-applicationProcessorEntryPoint:
 ;
-; Application Processors entry point
+; 0xffffffe0
 ;
-; GenFv generates code aligned on a 4k boundary which will jump to this
-; location.  (0xffffffe0)  This allows the Local APIC Startup IPI to be
-; used to wake up the application processors.
-;
-    jmp     EarlyApInitReal16
-
-ALIGN   8
-
-    DD      0
+    DD      0, 0, 0
 
 ;
-; The VTF signature
+; The VTF signature (0xffffffec)
 ;
 ; VTF-0 means that the VTF (Volume Top File) code does not require
 ; any fixups.

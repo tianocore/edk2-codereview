@@ -2,6 +2,7 @@
   Implement UnitTestLib
 
   Copyright (c) Microsoft Corporation.
+  Copyright (c) 2022, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
@@ -210,6 +211,7 @@ InitUnitTestFramework (
   EFI_STATUS                  Status;
   UNIT_TEST_FRAMEWORK_HANDLE  NewFrameworkHandle;
   UNIT_TEST_FRAMEWORK         *NewFramework;
+  UINTN                       SaveStateSize;
 
   Status       = EFI_SUCCESS;
   NewFramework = NULL;
@@ -267,12 +269,12 @@ InitUnitTestFramework (
   // If there is a persisted context, load it now.
   //
   if (DoesCacheExist (NewFrameworkHandle)) {
-    Status = LoadUnitTestCache (NewFrameworkHandle, (UNIT_TEST_SAVE_HEADER **)(&NewFramework->SavedState));
+    Status = LoadUnitTestCache (NewFrameworkHandle, (VOID **)(&NewFramework->SavedState), &SaveStateSize);
     if (EFI_ERROR (Status)) {
       //
       // Don't actually report it as an error, but emit a warning.
       //
-      DEBUG ((DEBUG_ERROR, "%a - Cache was detected, but failed to load.\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a - Cache was detected, but failed to load.\n", __func__));
       Status = EFI_SUCCESS;
     }
   }
@@ -852,9 +854,9 @@ SaveFrameworkState (
   //
   // All that should be left to do is save it using the associated persistence lib.
   //
-  Status = SaveUnitTestCache (FrameworkHandle, Header);
+  Status = SaveUnitTestCache (FrameworkHandle, Header, Header->SaveStateSize);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a - Could not save state! %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a - Could not save state! %r\n", __func__, Status));
     Status = EFI_DEVICE_ERROR;
   }
 

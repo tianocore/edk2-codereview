@@ -3,7 +3,7 @@
 #  - It decides if the firmware should expose ACPI or Device Tree-based
 #    hardware description to the operating system.
 #
-#  Copyright (c) 2018 - 2020, ARM Limited. All rights reserved.
+#  Copyright (c) 2018 - 2023, Arm Limited. All rights reserved.
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -21,7 +21,7 @@
   KvmtoolPlatformDxe.c
 
 [Packages]
-  ArmVirtPkg/ArmVirtPkg.dec
+  OvmfPkg/OvmfPkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
@@ -33,11 +33,13 @@
   UefiDriverEntryPoint
 
 [Guids]
+  gEdkiiNvVarStoreFormattedGuid   ## SOMETIMES_PRODUCES ## PROTOCOL
   gEdkiiPlatformHasAcpiGuid       ## SOMETIMES_PRODUCES ## PROTOCOL
   gEdkiiPlatformHasDeviceTreeGuid ## SOMETIMES_PRODUCES ## PROTOCOL
 
 [Pcd]
-  gArmVirtTokenSpaceGuid.PcdForceNoAcpi
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable
+  gUefiOvmfPkgTokenSpaceGuid.PcdForceNoAcpi
 
 [Depex]
   TRUE

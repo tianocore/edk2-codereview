@@ -156,7 +156,7 @@ AtaAhciInitPrivateData (
   //
   Status = PeiServicesGetBootMode (&BootMode);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Fail to get the current boot mode.\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Fail to get the current boot mode.\n", __func__));
     return Status;
   }
 
@@ -168,7 +168,7 @@ AtaAhciInitPrivateData (
     DEBUG ((
       DEBUG_ERROR,
       "%a: The device path is invalid.\n",
-      __FUNCTION__
+      __func__
       ));
     return Status;
   }
@@ -196,7 +196,7 @@ AtaAhciInitPrivateData (
     DEBUG ((
       DEBUG_ERROR,
       "%a: Fail to allocate private data.\n",
-      __FUNCTION__
+      __func__
       ));
     return EFI_OUT_OF_RESOURCES;
   }
@@ -260,7 +260,7 @@ AtaAhciInitPrivateData (
     DEBUG ((
       DEBUG_INFO,
       "%a: Security Security Command PPI will be produced.\n",
-      __FUNCTION__
+      __func__
       ));
     Private->StorageSecurityPpi.Revision           = EDKII_STORAGE_SECURITY_PPI_REVISION;
     Private->StorageSecurityPpi.GetNumberofDevices = AhciStorageSecurityGetDeviceNo;
@@ -329,7 +329,7 @@ AtaAhciInitPrivateDataFromHostControllerPpi (
       DEBUG ((
         DEBUG_ERROR,
         "%a: Fail to allocate get the device path for Controller %d.\n",
-        __FUNCTION__,
+        __func__,
         Controller
         ));
       return Status;
@@ -340,7 +340,7 @@ AtaAhciInitPrivateDataFromHostControllerPpi (
       DEBUG ((
         DEBUG_ERROR,
         "%a: Controller initialization fail for Controller %d with Status - %r.\n",
-        __FUNCTION__,
+        __func__,
         Controller,
         Status
         ));
@@ -348,7 +348,7 @@ AtaAhciInitPrivateDataFromHostControllerPpi (
       DEBUG ((
         DEBUG_INFO,
         "%a: Controller %d has been successfully initialized.\n",
-        __FUNCTION__,
+        __func__,
         Controller
         ));
     }
@@ -405,7 +405,7 @@ AtaAhciInitPrivateDataFromPciDevice (
 {
   EFI_STATUS                Status;
   PCI_TYPE00                PciData;
-  UINTN                     MmioBase;
+  UINT32                    MmioBase;
   EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
   UINTN                     DevicePathLength;
   UINT64                    EnabledPciAttributes;
@@ -454,12 +454,14 @@ AtaAhciInitPrivateDataFromPciDevice (
                                   &PciDevice->PciIo,
                                   EfiPciIoWidthUint32,
                                   0x24,
-                                  sizeof (UINTN),
+                                  1,
                                   &MmioBase
                                   );
   if (EFI_ERROR (Status)) {
     return EFI_UNSUPPORTED;
   }
+
+  MmioBase &= 0xFFFFFFF0;
 
   DevicePathLength = GetDevicePathSize (PciDevice->DevicePath);
   DevicePath       = PciDevice->DevicePath;
@@ -469,7 +471,7 @@ AtaAhciInitPrivateDataFromPciDevice (
     DEBUG ((
       DEBUG_INFO,
       "%a: Failed to init controller, with Status - %r\n",
-      __FUNCTION__,
+      __func__,
       Status
       ));
   }
@@ -520,7 +522,7 @@ AtaAhciPeimEntry (
   IN CONST EFI_PEI_SERVICES  **PeiServices
   )
 {
-  DEBUG ((DEBUG_INFO, "%a: Enters.\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "%a: Enters.\n", __func__));
 
   PeiServicesNotifyPpi (&mAtaAhciHostControllerNotify);
 

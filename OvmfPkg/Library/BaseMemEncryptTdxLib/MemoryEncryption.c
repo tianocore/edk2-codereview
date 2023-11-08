@@ -27,6 +27,8 @@
 #include "VirtualMemory.h"
 #include <IndustryStandard/Tdx.h>
 #include <Library/TdxLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Protocol/MemoryAccept.h>
 #include <ConfidentialComputingGuestAttr.h>
 
 typedef enum {
@@ -178,7 +180,7 @@ AllocatePageTableMemory (
     DEBUG_VERBOSE,
     "%a:%a: Buffer=0x%Lx Pages=%ld\n",
     gEfiCallerBaseName,
-    __FUNCTION__,
+    __func__,
     Buffer,
     Pages
     ));
@@ -508,8 +510,11 @@ Split1GPageTo2M (
   @param[in]      PagetablePoint        Page table entry pointer (PTE).
   @param[in]      Mode                  Set or Clear shared bit
 
+  @retval         EFI_SUCCESS           Successfully set or clear the memory shared bit
+  @retval         Others                Other error as indicated
 **/
-STATIC VOID
+STATIC
+EFI_STATUS
 SetOrClearSharedBit (
   IN   OUT     UINT64              *PageTablePointer,
   IN           TDX_PAGETABLE_MODE  Mode,
@@ -517,8 +522,10 @@ SetOrClearSharedBit (
   IN           UINT64              Length
   )
 {
-  UINT64  AddressEncMask;
-  UINT64  Status;
+  UINT64                        AddressEncMask;
+  UINT64                        TdStatus;
+  EFI_STATUS                    Status;
+  EDKII_MEMORY_ACCEPT_PROTOCOL  *MemoryAcceptProtocol;
 
   AddressEncMask = GetMemEncryptionAddressMask ();
 
@@ -533,25 +540,44 @@ SetOrClearSharedBit (
     PhysicalAddress   &= ~AddressEncMask;
   }
 
-  Status = TdVmCall (TDVMCALL_MAPGPA, PhysicalAddress, Length, 0, 0, NULL);
+  TdStatus = TdVmCall (TDVMCALL_MAPGPA, PhysicalAddress, Length, 0, 0, NULL);
+  if (TdStatus != 0) {
+    DEBUG ((DEBUG_ERROR, "%a: TdVmcall(MAPGPA) failed with %llx\n", __func__, TdStatus));
+    ASSERT (FALSE);
+    return EFI_DEVICE_ERROR;
+  }
 
   //
   // If changing shared to private, must accept-page again
   //
   if (Mode == ClearSharedBit) {
-    TdAcceptPages (PhysicalAddress, Length / EFI_PAGE_SIZE, EFI_PAGE_SIZE);
+    Status = gBS->LocateProtocol (&gEdkiiMemoryAcceptProtocolGuid, NULL, (VOID **)&MemoryAcceptProtocol);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to locate MemoryAcceptProtocol with %r\n", __func__, Status));
+      ASSERT (FALSE);
+      return Status;
+    }
+
+    Status = MemoryAcceptProtocol->AcceptMemory (MemoryAcceptProtocol, PhysicalAddress, Length);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to AcceptMemory with %r\n", __func__, Status));
+      ASSERT (FALSE);
+      return Status;
+    }
   }
 
   DEBUG ((
     DEBUG_VERBOSE,
     "%a:%a: pte=0x%Lx AddressEncMask=0x%Lx Mode=0x%x MapGPA Status=0x%x\n",
     gEfiCallerBaseName,
-    __FUNCTION__,
+    __func__,
     *PageTablePointer,
     AddressEncMask,
     Mode,
     Status
     ));
+
+  return EFI_SUCCESS;
 }
 
 /**
@@ -651,7 +677,7 @@ SetMemorySharedOrPrivate (
     DEBUG_VERBOSE,
     "%a:%a: Cr3Base=0x%Lx Physical=0x%Lx Length=0x%Lx Mode=%a\n",
     gEfiCallerBaseName,
-    __FUNCTION__,
+    __func__,
     Cr3BaseAddress,
     PhysicalAddress,
     (UINT64)Length,
@@ -708,7 +734,7 @@ SetMemorySharedOrPrivate (
         DEBUG_ERROR,
         "%a:%a: bad PML4 for Physical=0x%Lx\n",
         gEfiCallerBaseName,
-        __FUNCTION__,
+        __func__,
         PhysicalAddress
         ));
       Status = RETURN_NO_MAPPING;
@@ -725,7 +751,7 @@ SetMemorySharedOrPrivate (
         DEBUG_ERROR,
         "%a:%a: bad PDPE for Physical=0x%Lx\n",
         gEfiCallerBaseName,
-        __FUNCTION__,
+        __func__,
         PhysicalAddress
         ));
       Status = RETURN_NO_MAPPING;
@@ -741,12 +767,16 @@ SetMemorySharedOrPrivate (
       // If we have at least 1GB to go, we can just update this entry
       //
       if (!(PhysicalAddress & (BIT30 - 1)) && (Length >= BIT30)) {
-        SetOrClearSharedBit (&PageDirectory1GEntry->Uint64, Mode, PhysicalAddress, BIT30);
+        Status = SetOrClearSharedBit (&PageDirectory1GEntry->Uint64, Mode, PhysicalAddress, BIT30);
+        if (EFI_ERROR (Status)) {
+          goto Done;
+        }
+
         DEBUG ((
           DEBUG_VERBOSE,
           "%a:%a: updated 1GB entry for Physical=0x%Lx\n",
           gEfiCallerBaseName,
-          __FUNCTION__,
+          __func__,
           PhysicalAddress
           ));
         PhysicalAddress += BIT30;
@@ -759,7 +789,7 @@ SetMemorySharedOrPrivate (
           DEBUG_VERBOSE,
           "%a:%a: splitting 1GB page for Physical=0x%Lx\n",
           gEfiCallerBaseName,
-          __FUNCTION__,
+          __func__,
           PhysicalAddress
           ));
         Split1GPageTo2M (
@@ -787,7 +817,7 @@ SetMemorySharedOrPrivate (
           DEBUG_ERROR,
           "%a:%a: bad PDE for Physical=0x%Lx\n",
           gEfiCallerBaseName,
-          __FUNCTION__,
+          __func__,
           PhysicalAddress
           ));
         Status = RETURN_NO_MAPPING;
@@ -803,7 +833,11 @@ SetMemorySharedOrPrivate (
         // If we have at least 2MB left to go, we can just update this entry
         //
         if (!(PhysicalAddress & (BIT21-1)) && (Length >= BIT21)) {
-          SetOrClearSharedBit (&PageDirectory2MEntry->Uint64, Mode, PhysicalAddress, BIT21);
+          Status = SetOrClearSharedBit (&PageDirectory2MEntry->Uint64, Mode, PhysicalAddress, BIT21);
+          if (EFI_ERROR (Status)) {
+            goto Done;
+          }
+
           PhysicalAddress += BIT21;
           Length          -= BIT21;
         } else {
@@ -814,7 +848,7 @@ SetMemorySharedOrPrivate (
             DEBUG_VERBOSE,
             "%a:%a: splitting 2MB page for Physical=0x%Lx\n",
             gEfiCallerBaseName,
-            __FUNCTION__,
+            __func__,
             PhysicalAddress
             ));
 
@@ -843,14 +877,18 @@ SetMemorySharedOrPrivate (
             DEBUG_ERROR,
             "%a:%a: bad PTE for Physical=0x%Lx\n",
             gEfiCallerBaseName,
-            __FUNCTION__,
+            __func__,
             PhysicalAddress
             ));
           Status = RETURN_NO_MAPPING;
           goto Done;
         }
 
-        SetOrClearSharedBit (&PageTableEntry->Uint64, Mode, PhysicalAddress, EFI_PAGE_SIZE);
+        Status = SetOrClearSharedBit (&PageTableEntry->Uint64, Mode, PhysicalAddress, EFI_PAGE_SIZE);
+        if (EFI_ERROR (Status)) {
+          goto Done;
+        }
+
         PhysicalAddress += EFI_PAGE_SIZE;
         Length          -= EFI_PAGE_SIZE;
       }

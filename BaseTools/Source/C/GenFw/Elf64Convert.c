@@ -4,12 +4,11 @@ Elf64 convert solution
 Copyright (c) 2010 - 2021, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2013-2022, ARM Ltd. All rights reserved.<BR>
 Portions Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+Portions Copyright (c) 2022, Loongson Technology Corporation Limited. All rights reserved.<BR>
 
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
-#include "WinNtInclude.h"
 
 #ifndef __GNUC__
 #include <windows.h>
@@ -177,7 +176,7 @@ InitializeElf64 (
     Error (NULL, 0, 3000, "Unsupported", "ELF e_type not ET_EXEC or ET_DYN");
     return FALSE;
   }
-  if (!((mEhdr->e_machine == EM_X86_64) || (mEhdr->e_machine == EM_AARCH64) || (mEhdr->e_machine == EM_RISCV64))) {
+  if (!((mEhdr->e_machine == EM_X86_64) || (mEhdr->e_machine == EM_AARCH64) || (mEhdr->e_machine == EM_RISCV64) || (mEhdr->e_machine == EM_LOONGARCH))) {
     Warning (NULL, 0, 3000, "Unsupported", "ELF e_machine is not Elf64 machine.");
   }
   if (mEhdr->e_version != EV_CURRENT) {
@@ -769,6 +768,49 @@ WriteSectionRiscV64 (
   }
 }
 
+STATIC UINT16 mDllCharacteristicsEx;
+
+STATIC
+VOID
+ParseNoteSection (
+  CONST Elf_Shdr  *Shdr
+  )
+{
+  CONST Elf_Note *Note;
+  CONST UINT32   *Prop;
+  UINT32         Prop0;
+  UINT32         Prop2;
+
+  Note = (Elf_Note *)((UINT8 *)mEhdr + Shdr->sh_offset);
+
+  if ((Note->n_type == NT_GNU_PROPERTY_TYPE_0) &&
+      (Note->n_namesz == sizeof ("GNU")) &&
+      (strcmp ((CHAR8 *)(Note + 1), "GNU") == 0) &&
+      (Note->n_descsz > sizeof (UINT32[2]))) {
+    Prop = (UINT32 *)((UINT8 *)(Note + 1) + sizeof("GNU"));
+
+    switch (mEhdr->e_machine) {
+    case EM_AARCH64:
+      Prop0 = GNU_PROPERTY_AARCH64_FEATURE_1_AND;
+      Prop2 = GNU_PROPERTY_AARCH64_FEATURE_1_BTI;
+      break;
+
+    case EM_X86_64:
+      Prop0 = GNU_PROPERTY_X86_FEATURE_1_AND;
+      Prop2 = GNU_PROPERTY_X86_FEATURE_1_IBT;
+      break;
+
+    default:
+      return;
+    }
+    if ((Prop[0] == Prop0) &&
+        (Prop[1] >= sizeof (UINT32)) &&
+        ((Prop[2] & Prop2) != 0)) {
+      mDllCharacteristicsEx |= EFI_IMAGE_DLLCHARACTERISTICS_EX_FORWARD_CFI_COMPAT;
+    }
+  }
+}
+
 //
 // Elf functions interface implementation
 //
@@ -799,6 +841,7 @@ ScanSections64 (
   case EM_X86_64:
   case EM_AARCH64:
   case EM_RISCV64:
+  case EM_LOONGARCH:
     mCoffOffset += sizeof (EFI_IMAGE_NT_HEADERS64);
   break;
   default:
@@ -821,6 +864,13 @@ ScanSections64 (
     }
     if (IsTextShdr(shdr) || IsDataShdr(shdr) || IsHiiRsrcShdr(shdr)) {
       mCoffAlignment = (UINT32)shdr->sh_addralign;
+    }
+  }
+
+  for (i = 0; i < mEhdr->e_shnum; i++) {
+    Elf_Shdr *shdr = GetShdrByIndex(i);
+    if (shdr->sh_type == SHT_NOTE) {
+      ParseNoteSection (shdr);
     }
   }
 
@@ -939,6 +989,16 @@ ScanSections64 (
   mCoffOffset = mDebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY) +
                 sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) +
                 strlen(mInImageName) + 1;
+
+  //
+  // Add more space in the .debug data region for the DllCharacteristicsEx
+  // field.
+  //
+  if (mDllCharacteristicsEx != 0) {
+    mCoffOffset = DebugRvaAlign(mCoffOffset) +
+                  sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY) +
+                  sizeof (EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY);
+  }
 
   mCoffOffset = CoffAlign(mCoffOffset);
   if (SectionCount == 0) {
@@ -1077,21 +1137,25 @@ ScanSections64 (
 
   switch (mEhdr->e_machine) {
   case EM_X86_64:
-    NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
+    NtHdr->Pe32Plus.FileHeader.Machine = IMAGE_FILE_MACHINE_X64;
     NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
   case EM_AARCH64:
-    NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_AARCH64;
+    NtHdr->Pe32Plus.FileHeader.Machine = IMAGE_FILE_MACHINE_ARM64;
     NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
   case EM_RISCV64:
-    NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_RISCV64;
+    NtHdr->Pe32Plus.FileHeader.Machine = IMAGE_FILE_MACHINE_RISCV64;
+    NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+    break;
+  case EM_LOONGARCH:
+    NtHdr->Pe32Plus.FileHeader.Machine = IMAGE_FILE_MACHINE_LOONGARCH64;
     NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
 
   default:
-    VerboseMsg ("%s unknown e_machine type. Assume X64", (UINTN)mEhdr->e_machine);
-    NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
+    VerboseMsg ("%u unknown e_machine type. Assume X64", (UINTN)mEhdr->e_machine);
+    NtHdr->Pe32Plus.FileHeader.Machine = IMAGE_FILE_MACHINE_X64;
     NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
   }
 
@@ -1306,6 +1370,22 @@ WriteSections64 (
         UINT8    *Targ;
 
         //
+        // The _GLOBAL_OFFSET_TABLE_ symbol is not actually an absolute symbol,
+        // but carries the SHN_ABS section index for historical reasons.
+        // It must be accompanied by a R_*_GOT_* type relocation on a
+        // subsequent instruction, which we handle below, specifically to avoid
+        // the GOT indirection, and to refer to the symbol directly. This means
+        // we can simply disregard direct references to the GOT symbol itself,
+        // as the resulting value will never be used.
+        //
+        if (Sym->st_shndx == SHN_ABS) {
+          const UINT8 *SymName = GetSymName (Sym);
+          if (strcmp ((CHAR8 *)SymName, "_GLOBAL_OFFSET_TABLE_") == 0) {
+            continue;
+          }
+        }
+
+        //
         // Check section header index found in symbol table and get the section
         // header location.
         //
@@ -1317,10 +1397,10 @@ WriteSections64 (
           }
 
           //
-          // Skip error on EM_RISCV64 becasue no symble name is built
-          // from RISC-V toolchain.
+          // Skip error on EM_RISCV64 and EM_LOONGARCH because no symbol name is built
+          // from RISC-V and LoongArch toolchain.
           //
-          if (mEhdr->e_machine != EM_RISCV64) {
+          if ((mEhdr->e_machine != EM_RISCV64) && (mEhdr->e_machine != EM_LOONGARCH)) {
             Error (NULL, 0, 3000, "Invalid",
                    "%s: Bad definition for symbol '%s'@%#llx or unsupported symbol type.  "
                    "For example, absolute and undefined symbols are not supported.",
@@ -1447,6 +1527,23 @@ WriteSections64 (
 
           switch (ELF_R_TYPE(Rel->r_info)) {
             INT64 Offset;
+
+          case R_AARCH64_LD64_GOTOFF_LO15:
+          case R_AARCH64_LD64_GOTPAGE_LO15:
+            //
+            // Convert into an ADR instruction that refers to the symbol directly.
+            //
+            Offset = Sym->st_value - Rel->r_offset;
+
+            *(UINT32 *)Targ &= 0x1000001f;
+            *(UINT32 *)Targ |= ((Offset & 0x1ffffc) << (5 - 2)) | ((Offset & 0x3) << 29);
+
+            if (Offset < -0x100000 || Offset > 0xfffff) {
+              Error (NULL, 0, 3000, "Invalid", "WriteSections64(): %s failed to relax GOT based symbol reference - image is too big (>1 MiB).",
+                mInImageName);
+              break;
+            }
+            break;
 
           case R_AARCH64_LD64_GOT_LO12_NC:
             //
@@ -1585,6 +1682,188 @@ WriteSections64 (
           // Write section for RISC-V 64 architecture.
           //
           WriteSectionRiscV64 (Rel, Targ, SymShdr, Sym);
+        } else if (mEhdr->e_machine == EM_LOONGARCH) {
+          switch (ELF_R_TYPE(Rel->r_info)) {
+            INT64 Offset;
+            INT32 Lo, Hi;
+
+          case R_LARCH_SOP_PUSH_ABSOLUTE:
+            //
+            // Absolute relocation.
+            //
+            *(UINT64 *)Targ = *(UINT64 *)Targ - SymShdr->sh_addr + mCoffSectionsOffset[Sym->st_shndx];
+            break;
+
+          case R_LARCH_MARK_LA:
+          case R_LARCH_64:
+          case R_LARCH_NONE:
+          case R_LARCH_32:
+          case R_LARCH_RELATIVE:
+          case R_LARCH_COPY:
+          case R_LARCH_JUMP_SLOT:
+          case R_LARCH_TLS_DTPMOD32:
+          case R_LARCH_TLS_DTPMOD64:
+          case R_LARCH_TLS_DTPREL32:
+          case R_LARCH_TLS_DTPREL64:
+          case R_LARCH_TLS_TPREL32:
+          case R_LARCH_TLS_TPREL64:
+          case R_LARCH_IRELATIVE:
+          case R_LARCH_MARK_PCREL:
+          case R_LARCH_SOP_PUSH_PCREL:
+          case R_LARCH_SOP_PUSH_DUP:
+          case R_LARCH_SOP_PUSH_GPREL:
+          case R_LARCH_SOP_PUSH_TLS_TPREL:
+          case R_LARCH_SOP_PUSH_TLS_GOT:
+          case R_LARCH_SOP_PUSH_TLS_GD:
+          case R_LARCH_SOP_PUSH_PLT_PCREL:
+          case R_LARCH_SOP_ASSERT:
+          case R_LARCH_SOP_NOT:
+          case R_LARCH_SOP_SUB:
+          case R_LARCH_SOP_SL:
+          case R_LARCH_SOP_SR:
+          case R_LARCH_SOP_ADD:
+          case R_LARCH_SOP_AND:
+          case R_LARCH_SOP_IF_ELSE:
+          case R_LARCH_SOP_POP_32_S_10_5:
+          case R_LARCH_SOP_POP_32_U_10_12:
+          case R_LARCH_SOP_POP_32_S_10_12:
+          case R_LARCH_SOP_POP_32_S_10_16:
+          case R_LARCH_SOP_POP_32_S_10_16_S2:
+          case R_LARCH_SOP_POP_32_S_5_20:
+          case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+          case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
+          case R_LARCH_SOP_POP_32_U:
+          case R_LARCH_ADD8:
+          case R_LARCH_ADD16:
+          case R_LARCH_ADD24:
+          case R_LARCH_ADD32:
+          case R_LARCH_ADD64:
+          case R_LARCH_SUB8:
+          case R_LARCH_SUB16:
+          case R_LARCH_SUB24:
+          case R_LARCH_SUB32:
+          case R_LARCH_SUB64:
+          case R_LARCH_GNU_VTINHERIT:
+          case R_LARCH_GNU_VTENTRY:
+          case R_LARCH_B16:
+          case R_LARCH_B21:
+          case R_LARCH_B26:
+          case R_LARCH_ABS_HI20:
+          case R_LARCH_ABS_LO12:
+          case R_LARCH_ABS64_LO20:
+          case R_LARCH_ABS64_HI12:
+          case R_LARCH_PCALA_LO12:
+          case R_LARCH_PCALA64_LO20:
+          case R_LARCH_PCALA64_HI12:
+          case R_LARCH_GOT_PC_LO12:
+          case R_LARCH_GOT64_PC_LO20:
+          case R_LARCH_GOT64_PC_HI12:
+          case R_LARCH_GOT64_HI20:
+          case R_LARCH_GOT64_LO12:
+          case R_LARCH_GOT64_LO20:
+          case R_LARCH_GOT64_HI12:
+          case R_LARCH_TLS_LE_HI20:
+          case R_LARCH_TLS_LE_LO12:
+          case R_LARCH_TLS_LE64_LO20:
+          case R_LARCH_TLS_LE64_HI12:
+          case R_LARCH_TLS_IE_PC_HI20:
+          case R_LARCH_TLS_IE_PC_LO12:
+          case R_LARCH_TLS_IE64_PC_LO20:
+          case R_LARCH_TLS_IE64_PC_HI12:
+          case R_LARCH_TLS_IE64_HI20:
+          case R_LARCH_TLS_IE64_LO12:
+          case R_LARCH_TLS_IE64_LO20:
+          case R_LARCH_TLS_IE64_HI12:
+          case R_LARCH_TLS_LD_PC_HI20:
+          case R_LARCH_TLS_LD64_HI20:
+          case R_LARCH_TLS_GD_PC_HI20:
+          case R_LARCH_TLS_GD64_HI20:
+          case R_LARCH_32_PCREL:
+          case R_LARCH_RELAX:
+          case R_LARCH_DELETE:
+          case R_LARCH_ALIGN:
+          case R_LARCH_PCREL20_S2:
+          case R_LARCH_CFA:
+          case R_LARCH_ADD6:
+          case R_LARCH_SUB6:
+          case R_LARCH_ADD_ULEB128:
+          case R_LARCH_SUB_ULEB128:
+          case R_LARCH_64_PCREL:
+            //
+            // These types are not used or do not require fixup.
+            //
+            break;
+
+          case R_LARCH_GOT_PC_HI20:
+            Offset = Sym->st_value - (UINTN)(Targ - mCoffFile);
+            if (Offset < 0) {
+              Offset = (UINTN)(Targ - mCoffFile) - Sym->st_value;
+              Hi = Offset & ~0xfff;
+              Lo = (INT32)((Offset & 0xfff) << 20) >> 20;
+              if ((Lo < 0) && (Lo > -2048)) {
+                Hi += 0x1000;
+                Lo = ~(0x1000 - Lo) + 1;
+              }
+              Hi = ~Hi + 1;
+              Lo = ~Lo + 1;
+            } else {
+              Hi = Offset & ~0xfff;
+              Lo = (INT32)((Offset & 0xfff) << 20) >> 20;
+              if (Lo < 0) {
+                Hi += 0x1000;
+                Lo = ~(0x1000 - Lo) + 1;
+              }
+            }
+            // Re-encode the offset as PCADDU12I + ADDI.D(Convert LD.D) instruction
+            *(UINT32 *)Targ &= 0x1f;
+            *(UINT32 *)Targ |= 0x1c000000;
+            *(UINT32 *)Targ |= (((Hi >> 12) & 0xfffff) << 5);
+            *(UINT32 *)(Targ + 4) &= 0x3ff;
+            *(UINT32 *)(Targ + 4) |= 0x2c00000 | ((Lo & 0xfff) << 10);
+            break;
+
+          //
+          // Attempt to convert instruction.
+          //
+          case R_LARCH_PCALA_HI20:
+            // Decode the PCALAU12I instruction and the instruction that following it.
+            Offset = ((INT32)((*(UINT32 *)Targ & 0x1ffffe0) << 7));
+            Offset += ((INT32)((*(UINT32 *)(Targ + 4) & 0x3ffc00) << 10) >> 20);
+            //
+            // PCALA offset is relative to the previous page boundary,
+            // whereas PCADD offset is relative to the instruction itself.
+            // So fix up the offset so it points to the page containing
+            // the symbol.
+            //
+            Offset -= (UINTN)(Targ - mCoffFile) & 0xfff;
+            if (Offset < 0) {
+              Offset = -Offset;
+              Hi = Offset & ~0xfff;
+              Lo = (INT32)((Offset & 0xfff) << 20) >> 20;
+              if ((Lo < 0) && (Lo > -2048)) {
+                Hi += 0x1000;
+                Lo = ~(0x1000 - Lo) + 1;
+              }
+              Hi = ~Hi + 1;
+              Lo = ~Lo + 1;
+            } else {
+              Hi = Offset & ~0xfff;
+              Lo = (INT32)((Offset & 0xfff) << 20) >> 20;
+              if (Lo < 0) {
+                Hi += 0x1000;
+                Lo = ~(0x1000 - Lo) + 1;
+              }
+            }
+            // Convert the first instruction from PCALAU12I to PCADDU12I and re-encode the offset into them.
+            *(UINT32 *)Targ &= 0x1f;
+            *(UINT32 *)Targ |= 0x1c000000;
+            *(UINT32 *)Targ |= (((Hi >> 12) & 0xfffff) << 5);
+            *(UINT32 *)(Targ + 4) &= 0xffc003ff;
+            *(UINT32 *)(Targ + 4) |= (Lo & 0xfff) << 10;
+            break;
+          default:
+            Error (NULL, 0, 3000, "Invalid", "WriteSections64(): %s unsupported ELF EM_LOONGARCH relocation 0x%x.", mInImageName, (unsigned) ELF64_R_TYPE(Rel->r_info));
+          }
         } else {
           Error (NULL, 0, 3000, "Invalid", "Not a supported machine type");
         }
@@ -1626,7 +1905,7 @@ WriteRelocations64 (
             case R_X86_64_REX_GOTPCRELX:
               break;
             case R_X86_64_64:
-              VerboseMsg ("EFI_IMAGE_REL_BASED_DIR64 Offset: 0x%08X",
+              VerboseMsg ("EFI_IMAGE_REL_BASED_DIR64 Offset: 0x%08llX",
                 mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr));
               CoffAddFixup(
                 (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
@@ -1656,7 +1935,7 @@ WriteRelocations64 (
             //
             // case R_X86_64_32S:
             case R_X86_64_32:
-              VerboseMsg ("EFI_IMAGE_REL_BASED_HIGHLOW Offset: 0x%08X",
+              VerboseMsg ("EFI_IMAGE_REL_BASED_HIGHLOW Offset: 0x%08llX",
                 mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr));
               CoffAddFixup(
                 (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
@@ -1686,6 +1965,8 @@ WriteRelocations64 (
             case R_AARCH64_LDST128_ABS_LO12_NC:
             case R_AARCH64_ADR_GOT_PAGE:
             case R_AARCH64_LD64_GOT_LO12_NC:
+            case R_AARCH64_LD64_GOTOFF_LO15:
+            case R_AARCH64_LD64_GOTPAGE_LO15:
               //
               // No fixups are required for relative relocations, provided that
               // the relative offsets between sections have been preserved in
@@ -1815,6 +2096,123 @@ WriteRelocations64 (
             default:
               Error (NULL, 0, 3000, "Invalid", "WriteRelocations64(): %s unsupported ELF EM_RISCV64 relocation 0x%x.", mInImageName, (unsigned) ELF_R_TYPE(Rel->r_info));
             }
+          } else if (mEhdr->e_machine == EM_LOONGARCH) {
+            switch (ELF_R_TYPE(Rel->r_info)) {
+              case R_LARCH_MARK_LA:
+                CoffAddFixup(
+                  (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
+                  + (Rel->r_offset - SecShdr->sh_addr)),
+                  EFI_IMAGE_REL_BASED_LOONGARCH64_MARK_LA);
+                break;
+              case R_LARCH_64:
+                CoffAddFixup(
+                  (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
+                  + (Rel->r_offset - SecShdr->sh_addr)),
+                  EFI_IMAGE_REL_BASED_DIR64);
+                break;
+              case R_LARCH_NONE:
+              case R_LARCH_32:
+              case R_LARCH_RELATIVE:
+              case R_LARCH_COPY:
+              case R_LARCH_JUMP_SLOT:
+              case R_LARCH_TLS_DTPMOD32:
+              case R_LARCH_TLS_DTPMOD64:
+              case R_LARCH_TLS_DTPREL32:
+              case R_LARCH_TLS_DTPREL64:
+              case R_LARCH_TLS_TPREL32:
+              case R_LARCH_TLS_TPREL64:
+              case R_LARCH_IRELATIVE:
+              case R_LARCH_MARK_PCREL:
+              case R_LARCH_SOP_PUSH_PCREL:
+              case R_LARCH_SOP_PUSH_ABSOLUTE:
+              case R_LARCH_SOP_PUSH_DUP:
+              case R_LARCH_SOP_PUSH_GPREL:
+              case R_LARCH_SOP_PUSH_TLS_TPREL:
+              case R_LARCH_SOP_PUSH_TLS_GOT:
+              case R_LARCH_SOP_PUSH_TLS_GD:
+              case R_LARCH_SOP_PUSH_PLT_PCREL:
+              case R_LARCH_SOP_ASSERT:
+              case R_LARCH_SOP_NOT:
+              case R_LARCH_SOP_SUB:
+              case R_LARCH_SOP_SL:
+              case R_LARCH_SOP_SR:
+              case R_LARCH_SOP_ADD:
+              case R_LARCH_SOP_AND:
+              case R_LARCH_SOP_IF_ELSE:
+              case R_LARCH_SOP_POP_32_S_10_5:
+              case R_LARCH_SOP_POP_32_U_10_12:
+              case R_LARCH_SOP_POP_32_S_10_12:
+              case R_LARCH_SOP_POP_32_S_10_16:
+              case R_LARCH_SOP_POP_32_S_10_16_S2:
+              case R_LARCH_SOP_POP_32_S_5_20:
+              case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+              case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
+              case R_LARCH_SOP_POP_32_U:
+              case R_LARCH_ADD8:
+              case R_LARCH_ADD16:
+              case R_LARCH_ADD24:
+              case R_LARCH_ADD32:
+              case R_LARCH_ADD64:
+              case R_LARCH_SUB8:
+              case R_LARCH_SUB16:
+              case R_LARCH_SUB24:
+              case R_LARCH_SUB32:
+              case R_LARCH_SUB64:
+              case R_LARCH_GNU_VTINHERIT:
+              case R_LARCH_GNU_VTENTRY:
+              case R_LARCH_B16:
+              case R_LARCH_B21:
+              case R_LARCH_B26:
+              case R_LARCH_ABS_HI20:
+              case R_LARCH_ABS_LO12:
+              case R_LARCH_ABS64_LO20:
+              case R_LARCH_ABS64_HI12:
+              case R_LARCH_PCALA_HI20:
+              case R_LARCH_PCALA_LO12:
+              case R_LARCH_PCALA64_LO20:
+              case R_LARCH_PCALA64_HI12:
+              case R_LARCH_GOT_PC_HI20:
+              case R_LARCH_GOT_PC_LO12:
+              case R_LARCH_GOT64_PC_LO20:
+              case R_LARCH_GOT64_PC_HI12:
+              case R_LARCH_GOT64_HI20:
+              case R_LARCH_GOT64_LO12:
+              case R_LARCH_GOT64_LO20:
+              case R_LARCH_GOT64_HI12:
+              case R_LARCH_TLS_LE_HI20:
+              case R_LARCH_TLS_LE_LO12:
+              case R_LARCH_TLS_LE64_LO20:
+              case R_LARCH_TLS_LE64_HI12:
+              case R_LARCH_TLS_IE_PC_HI20:
+              case R_LARCH_TLS_IE_PC_LO12:
+              case R_LARCH_TLS_IE64_PC_LO20:
+              case R_LARCH_TLS_IE64_PC_HI12:
+              case R_LARCH_TLS_IE64_HI20:
+              case R_LARCH_TLS_IE64_LO12:
+              case R_LARCH_TLS_IE64_LO20:
+              case R_LARCH_TLS_IE64_HI12:
+              case R_LARCH_TLS_LD_PC_HI20:
+              case R_LARCH_TLS_LD64_HI20:
+              case R_LARCH_TLS_GD_PC_HI20:
+              case R_LARCH_TLS_GD64_HI20:
+              case R_LARCH_32_PCREL:
+              case R_LARCH_RELAX:
+              case R_LARCH_DELETE:
+              case R_LARCH_ALIGN:
+              case R_LARCH_PCREL20_S2:
+              case R_LARCH_CFA:
+              case R_LARCH_ADD6:
+              case R_LARCH_SUB6:
+              case R_LARCH_ADD_ULEB128:
+              case R_LARCH_SUB_ULEB128:
+              case R_LARCH_64_PCREL:
+                //
+                // These types are not used or do not require fixup in PE format files.
+                //
+                break;
+              default:
+                  Error (NULL, 0, 3000, "Invalid", "WriteRelocations64(): %s unsupported ELF EM_LOONGARCH relocation 0x%x.", mInImageName, (unsigned) ELF64_R_TYPE(Rel->r_info));
+            }
           } else {
             Error (NULL, 0, 3000, "Not Supported", "This tool does not support relocations for ELF with e_machine %u (processor type).", (unsigned) mEhdr->e_machine);
           }
@@ -1874,29 +2272,47 @@ WriteDebug64 (
   VOID
   )
 {
-  UINT32                              Len;
-  EFI_IMAGE_OPTIONAL_HEADER_UNION     *NtHdr;
-  EFI_IMAGE_DATA_DIRECTORY            *DataDir;
-  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY     *Dir;
-  EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY *Nb10;
+  UINT32                                      Len;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION             *NtHdr;
+  EFI_IMAGE_DATA_DIRECTORY                    *DataDir;
+  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY             *Dir;
+  EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY         *Nb10;
+  EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY *DllEntry;
 
   Len = strlen(mInImageName) + 1;
-
-  Dir = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY*)(mCoffFile + mDebugOffset);
-  Dir->Type = EFI_IMAGE_DEBUG_TYPE_CODEVIEW;
-  Dir->SizeOfData = sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) + Len;
-  Dir->RVA = mDebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
-  Dir->FileOffset = mDebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
-
-  Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
-  Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
-  strcpy ((char *)(Nb10 + 1), mInImageName);
-
 
   NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(mCoffFile + mNtHdrOffset);
   DataDir = &NtHdr->Pe32Plus.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG];
   DataDir->VirtualAddress = mDebugOffset;
-  DataDir->Size = sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+  DataDir->Size = sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+
+  Dir = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY*)(mCoffFile + mDebugOffset);
+
+  if (mDllCharacteristicsEx != 0) {
+    DataDir->Size  += sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+
+    Dir->Type       = EFI_IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS;
+    Dir->SizeOfData = sizeof (EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY);
+    Dir->FileOffset = mDebugOffset + DataDir->Size +
+                      sizeof (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) +
+                      DebugRvaAlign(Len);
+    Dir->RVA        = Dir->FileOffset;
+
+    DllEntry = (VOID *)(mCoffFile + Dir->FileOffset);
+
+    DllEntry->DllCharacteristicsEx = mDllCharacteristicsEx;
+
+    Dir++;
+  }
+
+  Dir->Type = EFI_IMAGE_DEBUG_TYPE_CODEVIEW;
+  Dir->SizeOfData = sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) + Len;
+  Dir->RVA = mDebugOffset + DataDir->Size;
+  Dir->FileOffset = mDebugOffset + DataDir->Size;
+
+  Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
+  Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
+  strcpy ((char *)(Nb10 + 1), mInImageName);
 }
 
 STATIC

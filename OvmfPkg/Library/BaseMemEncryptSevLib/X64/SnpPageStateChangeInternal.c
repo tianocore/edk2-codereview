@@ -13,14 +13,13 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemEncryptSevLib.h>
 #include <Library/DebugLib.h>
-#include <Library/VmgExitLib.h>
+#include <Library/CcExitLib.h>
 
 #include <Register/Amd/Ghcb.h>
 #include <Register/Amd/Msr.h>
 
 #include "SnpPageStateChange.h"
 
-#define IS_ALIGNED(x, y)  ((((x) & (y - 1)) == 0))
 #define PAGES_PER_LARGE_ENTRY  512
 
 STATIC
@@ -114,7 +113,7 @@ PvalidateRange (
         DEBUG_ERROR,
         "%a:%a: Failed to %a address 0x%Lx Error code %d\n",
         gEfiCallerBaseName,
-        __FUNCTION__,
+        __func__,
         Validate ? "Validate" : "Invalidate",
         Address,
         Ret
@@ -193,9 +192,9 @@ PageStateChangeVmgExit (
   //
   while (Info->Header.CurrentEntry <= Info->Header.EndEntry) {
     Ghcb->SaveArea.SwScratch = (UINT64)Ghcb->SharedBuffer;
-    VmgSetOffsetValid (Ghcb, GhcbSwScratch);
+    CcExitVmgSetOffsetValid (Ghcb, GhcbSwScratch);
 
-    Status = VmgExit (Ghcb, SVM_EXIT_SNP_PAGE_STATE_CHANGE, 0, 0);
+    Status = CcExitVmgExit (Ghcb, SVM_EXIT_SNP_PAGE_STATE_CHANGE, 0, 0);
 
     //
     // The Page State Change VMGEXIT can pass the failure through the
@@ -238,7 +237,7 @@ InternalSetPageState (
     DEBUG_VERBOSE,
     "%a:%a Address 0x%Lx - 0x%Lx State = %a LargeEntry = %d\n",
     gEfiCallerBaseName,
-    __FUNCTION__,
+    __func__,
     BaseAddress,
     EndAddress,
     State == SevSnpPageShared ? "Shared" : "Private",
@@ -251,7 +250,7 @@ InternalSetPageState (
     //
     // Initialize the GHCB
     //
-    VmgInit (Ghcb, &InterruptState);
+    CcExitVmgInit (Ghcb, &InterruptState);
 
     //
     // Build the page state structure
@@ -293,7 +292,7 @@ InternalSetPageState (
       PvalidateRange (Info, CurrentEntry, EndEntry, TRUE);
     }
 
-    VmgDone (Ghcb, InterruptState);
+    CcExitVmgDone (Ghcb, InterruptState);
 
     BaseAddress = NextAddress;
   }

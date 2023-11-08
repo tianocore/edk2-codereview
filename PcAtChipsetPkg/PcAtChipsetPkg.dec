@@ -76,6 +76,12 @@
   # @Expression 0x80000001 | gPcAtChipsetPkgTokenSpaceGuid.PcdMaximalValidYear < gPcAtChipsetPkgTokenSpaceGuid.PcdMinimalValidYear + 100
   gPcAtChipsetPkgTokenSpaceGuid.PcdMaximalValidYear|2097|UINT16|0x0000000E
 
+  ## This PCD specifies the RTC default year when the RTC is in an invalid state.
+  # @Prompt Default year in RTC.
+  # @Expression 0x80000001 | gPcAtChipsetPkgTokenSpaceGuid.PcdRtcDefaultYear >= gPcAtChipsetPkgTokenSpaceGuid.PcdMinimalValidYear
+  # @Expression 0x80000001 | gPcAtChipsetPkgTokenSpaceGuid.PcdRtcDefaultYear <= gPcAtChipsetPkgTokenSpaceGuid.PcdMaximalValidYear
+  gPcAtChipsetPkgTokenSpaceGuid.PcdRtcDefaultYear|gPcAtChipsetPkgTokenSpaceGuid.PcdMinimalValidYear|UINT16|0x0000000F
+
   ## Specifies RTC Index Register address in MMIO space.
   # @Prompt RTC Index Register address
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcIndexRegister64|0x0|UINT64|0x00000022
@@ -83,6 +89,14 @@
   ## Specifies RTC Target Register address in MMIO space.
   # @Prompt RTC Target Register address
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcTargetRegister64|0x0|UINT64|0x00000023
+
+  ## Specifies RTC Index Register address in I/O space.
+  # @Prompt RTC Index Register address
+  gPcAtChipsetPkgTokenSpaceGuid.PcdRtcIndexRegister|0x70|UINT8|0x0000001E
+
+  ## Specifies RTC Target Register address in I/O space.
+  # @Prompt RTC Target Register address
+  gPcAtChipsetPkgTokenSpaceGuid.PcdRtcTargetRegister|0x71|UINT8|0x0000001F
 
 [PcdsFixedAtBuild, PcdsPatchableInModule]
   ## Defines the ACPI register set base address.
@@ -145,14 +159,6 @@
   ## Specifies the initial value for Register_D in RTC.
   # @Prompt Initial value for Register_D in RTC.
   gPcAtChipsetPkgTokenSpaceGuid.PcdInitialValueRtcRegisterD|0x00|UINT8|0x0000001D
-
-  ## Specifies RTC Index Register address in I/O space.
-  # @Prompt RTC Index Register address
-  gPcAtChipsetPkgTokenSpaceGuid.PcdRtcIndexRegister|0x70|UINT8|0x0000001E
-
-  ## Specifies RTC Target Register address in I/O space.
-  # @Prompt RTC Target Register address
-  gPcAtChipsetPkgTokenSpaceGuid.PcdRtcTargetRegister|0x71|UINT8|0x0000001F
 
   ## RTC Update Timeout Value(microsecond).
   # @Prompt RTC Update Timeout Value.

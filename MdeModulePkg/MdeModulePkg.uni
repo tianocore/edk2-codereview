@@ -1166,6 +1166,10 @@
                                                                                                    "in the DXE phase. Minimum value is 1. Sections nested more deeply are<BR>"
                                                                                                    "rejected."
 
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdAhciCommandRetryCount_PROMPT  #language en-US "Retry Count of AHCI command if there is a failure"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdAhciCommandRetryCount_HELP  #language en-US "This value is used to configure number of retries on AHCI commands, if there is a failure."
+
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdCapsuleInRamSupport_PROMPT  #language en-US "Enable Capsule In Ram support"
 
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdCapsuleInRamSupport_HELP  #language en-US   "Capsule In Ram is to use memory to deliver the capsules that will be processed after system reset.<BR><BR>"
@@ -1285,6 +1289,24 @@
                                                                                     "  If enabled, stack overflow in UEFI can be caught, preventing chaotic consequences.<BR><BR>\n"
                                                                                     "   TRUE  - UEFI Stack Guard will be enabled.<BR>\n"
                                                                                     "   FALSE - UEFI Stack Guard will be disabled.<BR>"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTraceHubDebugLevel_PROMPT  #language en-US "Debug level of Trace Hub."
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTraceHubDebugLevel_HELP    #language en-US "Indicate debug level of Trace Hub"
+                                                                                         "  0x0 - TraceHubDebugLevelError.<BR>"
+                                                                                         "  0x1 - TraceHubDebugLevelErrorWarning.<BR>"
+                                                                                         "  0x2 - TraceHubDebugLevelErrorWarningInfo.<BR>"
+                                                                                         "  0x3 - TraceHubDebugLevelErrorWarningInfoVerbose.<BR>"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdEnableTraceHubDebugMsg_PROMPT  #language en-US "Flag to enable or disable Trace Hub message"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdEnableTraceHubDebugMsg_HELP    #language en-US "Enable or Disable Trace Hub message"
+                                                                                             "  FALSE - Disable Trace Hub debug message.<BR>"
+                                                                                             "  TRUE  - Enable Trace Hub debug message.<BR>"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTraceHubDebugMmioAddress_PROMPT  #language en-US "Output MMIO address of Trace Hub message"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTraceHubDebugMmioAddress_HELP    #language en-US "Indicate MMIO address where Trace Hub message output to."
 
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdSetNvStoreDefaultId_PROMPT  #language en-US "NV Storage DefaultId"
 

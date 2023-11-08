@@ -8,6 +8,9 @@
 **/
 
 #include <OvmfPlatforms.h> // CLOUDHV_DEVICE_ID
+#include <ConfidentialComputingGuestAttr.h>
+
+#include <Library/AcpiPlatformLib.h>
 
 #include "AcpiPlatform.h"
 
@@ -33,7 +36,11 @@ InstallAcpiTables (
 
   HostBridgeDevId = PcdGet16 (PcdOvmfHostBridgePciDevId);
   if (HostBridgeDevId == CLOUDHV_DEVICE_ID) {
-    Status = InstallCloudHvTables (AcpiTable);
+    if (CC_GUEST_IS_TDX (PcdGet64 (PcdConfidentialComputingGuestAttr))) {
+      Status = InstallCloudHvTablesTdx (AcpiTable);
+    } else {
+      Status = InstallCloudHvTables (AcpiTable);
+    }
   } else {
     Status = InstallQemuFwCfgTables (AcpiTable);
   }

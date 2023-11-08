@@ -34,16 +34,26 @@ parameters:
 - name: extra_install_step
   type: stepList
   default: []
+- name: usePythonVersion
+  type: string
+  default: ''
 
 steps:
+- bash: |
+    echo "##vso[task.prependpath]${HOME}/.local/bin"
+    echo "new PATH=${PATH}"
+  displayName: Set PATH
+  condition: eq('${{ parameters.tool_chain_tag }}', 'GCC5')
+
 - checkout: self
   clean: true
   fetchDepth: 1
 
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: ">=3.10.6"
+    versionSpec: ${{ parameters.usePythonVersion }}
     architecture: "x64"
+  condition: ne('${{ parameters.usePythonVersion }}', '')
 
 - script: pip install -r pip-requirements.txt --upgrade
   displayName: 'Install/Upgrade pip modules'
@@ -106,7 +116,7 @@ steps:
     filename: stuart_build
     arguments: -c ${{ parameters.build_file }} TOOL_CHAIN_TAG=${{ parameters.tool_chain_tag}} TARGET=${{ parameters.build_target}} -a ${{ parameters.build_arch}} ${{ parameters.build_flags}} ${{ parameters.run_flags }} --FlashOnly
   condition: and(and(gt(variables.pkg_count, 0), succeeded()), eq(variables['Run'], true))
-  timeoutInMinutes: 1
+  timeoutInMinutes: 2
 
 # Copy the build logs to the artifact staging directory
 - task: CopyFiles@2

@@ -288,12 +288,6 @@ GeneratePciDeviceInfo (
 
   Cf. ACPI 6.4 specification, s6.2.13 "_PRT (PCI Routing Table)"
 
-  The first model (defining a _CRS object) is used. This is necessary because
-  PCI legacy interrupts are active low and GICv2 SPI interrupts are active
-  high.
-  Even though PCI interrupts cannot be re-routed, only the first model allows
-  to specify the activation state (low/high).
-
   @param [in]       Generator       The SSDT Pci generator.
   @param [in]       CfgMgrProtocol  Pointer to the Configuration Manager
                                     Protocol interface.
@@ -397,6 +391,8 @@ GeneratePrt (
        High word-Device #, Low word-Function #. (for example, device 3,
        function 2 is 0x00030002). To refer to all the functions on a device #,
        use a function number of FFFF).
+
+      Use the second model for _PRT object and describe a hardwired interrupt.
     */
     Status = AmlAddPrtEntry (
                (IrqMapInfo->PciDevice << 16) | 0xFFFF,
@@ -544,7 +540,7 @@ GeneratePciCrs (
 
     switch (AddrMapInfo->SpaceCode) {
       case PCI_SS_IO:
-        Status = AmlCodeGenRdDWordIo (
+        Status = AmlCodeGenRdQWordIo (
                    FALSE,
                    TRUE,
                    TRUE,
@@ -570,7 +566,7 @@ GeneratePciCrs (
                    IsPosDecode,
                    TRUE,
                    TRUE,
-                   TRUE,
+                   AmlMemoryCacheable,
                    TRUE,
                    0,
                    AddrMapInfo->PciAddress,
@@ -579,7 +575,7 @@ GeneratePciCrs (
                    AddrMapInfo->AddressSize,
                    0,
                    NULL,
-                   0,
+                   AmlAddressRangeMemory,
                    TRUE,
                    CrsNode,
                    NULL
@@ -592,7 +588,7 @@ GeneratePciCrs (
                    IsPosDecode,
                    TRUE,
                    TRUE,
-                   TRUE,
+                   AmlMemoryCacheable,
                    TRUE,
                    0,
                    AddrMapInfo->PciAddress,
@@ -601,7 +597,7 @@ GeneratePciCrs (
                    AddrMapInfo->AddressSize,
                    0,
                    NULL,
-                   0,
+                   AmlAddressRangeMemory,
                    TRUE,
                    CrsNode,
                    NULL
@@ -722,7 +718,7 @@ ReserveEcamSpace (
              TRUE,
              TRUE,
              TRUE,
-             FALSE,  // non-cacheable
+             AmlMemoryNonCacheable,
              TRUE,
              0,
              AddressMinimum,
@@ -731,7 +727,7 @@ ReserveEcamSpace (
              AddressMaximum - AddressMinimum + 1,
              0,
              NULL,
-             0,
+             AmlAddressRangeMemory,
              TRUE,
              CrsNode,
              NULL
@@ -981,6 +977,7 @@ BuildSsdtPciTableEx (
   UINTN                         Index;
   EFI_ACPI_DESCRIPTION_HEADER   **TableList;
   ACPI_PCI_GENERATOR            *Generator;
+  UINT32                        Uid;
 
   ASSERT (This != NULL);
   ASSERT (AcpiTableInfo != NULL);
@@ -1036,13 +1033,29 @@ BuildSsdtPciTableEx (
   *Table = TableList;
 
   for (Index = 0; Index < PciCount; Index++) {
+    if (PcdGetBool (PcdPciUseSegmentAsUid)) {
+      Uid = PciInfo[Index].PciSegmentGroupNumber;
+      if (Uid > MAX_PCI_ROOT_COMPLEXES_SUPPORTED) {
+        DEBUG ((
+          DEBUG_ERROR,
+          "ERROR: SSDT-PCI: Pci root complexes segment number: %d."
+          " Greater than maximum number of Pci root complexes supported = %d.\n",
+          Uid,
+          MAX_PCI_ROOT_COMPLEXES_SUPPORTED
+          ));
+        return EFI_INVALID_PARAMETER;
+      }
+    } else {
+      Uid = Index;
+    }
+
     // Build a SSDT table describing the Pci devices.
     Status = BuildSsdtPciTable (
                Generator,
                CfgMgrProtocol,
                AcpiTableInfo,
                &PciInfo[Index],
-               Index,
+               Uid,
                &TableList[Index]
                );
     if (EFI_ERROR (Status)) {

@@ -3,6 +3,8 @@
 
    Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2020 Hewlett Packard Enterprise Development LP<BR>
+  Copyright (c) 2023, American Megatrends International LLC.
+  Copyright (c) 2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -27,7 +29,8 @@ EFI_REST_EX_PROTOCOL  mRedfishRestExProtocol = {
   response when the data is retrieved from the service. RequestMessage contains the HTTP
   request to the REST resource identified by RequestMessage.Request.Url. The
   ResponseMessage is the returned HTTP response for that request, including any HTTP
-  status.
+  status. It's caller's responsibility to free this ResponseMessage using FreePool().
+  RestConfigFreeHttpMessage() in RedfishLib is an example to release ResponseMessage structure.
 
   @param[in]  This                Pointer to EFI_REST_EX_PROTOCOL instance for a particular
                                   REST service.
@@ -66,11 +69,13 @@ RedfishRestExSendReceive (
   HTTP_IO_SEND_NON_CHUNK_PROCESS  SendNonChunkProcess;
   EFI_HTTP_MESSAGE                ChunkTransferRequestMessage;
 
-  Status               = EFI_SUCCESS;
-  ResponseData         = NULL;
-  IsGetChunkedTransfer = FALSE;
-  SendChunkProcess     = HttpIoSendChunkNone;
-  SendNonChunkProcess  = HttpIoSendNonChunkNone;
+  Status                  = EFI_SUCCESS;
+  ResponseData            = NULL;
+  IsGetChunkedTransfer    = FALSE;
+  SendChunkProcess        = HttpIoSendChunkNone;
+  SendNonChunkProcess     = HttpIoSendNonChunkNone;
+  ItsWrite                = FALSE;
+  PreservedRequestHeaders = NULL;
 
   //
   // Validate the parameters
@@ -87,74 +92,91 @@ RedfishRestExSendReceive (
   MediaPresent = TRUE;
   NetLibDetectMedia (Instance->Service->ControllerHandle, &MediaPresent);
   if (!MediaPresent) {
-    DEBUG ((DEBUG_INFO, "RedfishRestExSendReceive(): No MediaPresent.\n"));
+    DEBUG ((DEBUG_REDFISH_NETWORK, "RedfishRestExSendReceive(): No MediaPresent.\n"));
     return EFI_NO_MEDIA;
   }
 
-  DEBUG ((DEBUG_INFO, "\nRedfishRestExSendReceive():\n"));
-  DEBUG ((DEBUG_INFO, "*** Perform HTTP Request Method - %d, URL: %s\n", RequestMessage->Data.Request->Method, RequestMessage->Data.Request->Url));
+  DEBUG ((DEBUG_REDFISH_NETWORK, "\nRedfishRestExSendReceive():\n"));
+  DEBUG ((DEBUG_REDFISH_NETWORK, "*** Perform HTTP Request Method - %d, URL: %s\n", RequestMessage->Data.Request->Method, RequestMessage->Data.Request->Url));
 
-  //
-  // Add header "Expect" to server, only for URL write.
-  //
-  Status = RedfishHttpAddExpectation (This, RequestMessage, &PreservedRequestHeaders, &ItsWrite);
-  if (EFI_ERROR (Status)) {
-    return Status;
-  }
+  if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode)) {
+    //
+    // Add header "Expect" to server, only for URL write.
+    //
+    Status = RedfishHttpAddExpectation (This, RequestMessage, &PreservedRequestHeaders, &ItsWrite);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
 
-  if (ItsWrite == TRUE) {
-    if (RequestMessage->BodyLength > HTTP_IO_MAX_SEND_PAYLOAD) {
-      //
-      // Send chunked transfer.
-      //
-      SendChunkProcess++;
-      CopyMem ((VOID *)&ChunkTransferRequestMessage, (VOID *)RequestMessage, sizeof (EFI_HTTP_MESSAGE));
-    } else {
-      SendNonChunkProcess++;
+    if (ItsWrite == TRUE) {
+      if (RequestMessage->BodyLength > HTTP_IO_MAX_SEND_PAYLOAD) {
+        //
+        // Send chunked transfer.
+        //
+        SendChunkProcess++;
+        CopyMem ((VOID *)&ChunkTransferRequestMessage, (VOID *)RequestMessage, sizeof (EFI_HTTP_MESSAGE));
+      } else {
+        SendNonChunkProcess++;
+      }
     }
   }
 
 ReSendRequest:;
-  //
-  // Send out the request to REST service.
-  //
-  if (ItsWrite == TRUE) {
+
+  if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode)) {
     //
-    // This is write to URI
+    // Send the chunked request to REST service.
     //
-    if (SendChunkProcess > HttpIoSendChunkNone) {
+    if (ItsWrite == TRUE) {
       //
-      // This is chunk transfer for writing large payload.
-      // Send request header first and then handle the
-      // following request message body using chunk transfer.
+      // This is write to URI
       //
-      do {
-        Status = HttpIoSendChunkedTransfer (
+      if (SendChunkProcess > HttpIoSendChunkNone) {
+        //
+        // This is chunk transfer for writing large payload.
+        // Send request header first and then handle the
+        // following request message body using chunk transfer.
+        //
+        do {
+          Status = HttpIoSendChunkedTransfer (
+                     &(Instance->HttpIo),
+                     &SendChunkProcess,
+                     &ChunkTransferRequestMessage
+                     );
+          if (EFI_ERROR (Status)) {
+            goto ON_EXIT;
+          }
+        } while (SendChunkProcess == HttpIoSendChunkContent || SendChunkProcess == HttpIoSendChunkEndChunk);
+      } else {
+        //
+        // This is the non-chunk transfer, send request header first and then
+        // handle the following request message body using chunk transfer.
+        //
+        Status = HttpIoSendRequest (
                    &(Instance->HttpIo),
-                   &SendChunkProcess,
-                   &ChunkTransferRequestMessage
+                   (SendNonChunkProcess == HttpIoSendNonChunkContent) ? NULL : RequestMessage->Data.Request,
+                   (SendNonChunkProcess == HttpIoSendNonChunkContent) ? 0 : RequestMessage->HeaderCount,
+                   (SendNonChunkProcess == HttpIoSendNonChunkContent) ? NULL : RequestMessage->Headers,
+                   (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent) ? 0 : RequestMessage->BodyLength,
+                   (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent) ? NULL : RequestMessage->Body
                    );
-        if (EFI_ERROR (Status)) {
-          goto ON_EXIT;
-        }
-      } while (SendChunkProcess == HttpIoSendChunkContent || SendChunkProcess == HttpIoSendChunkEndChunk);
+      }
     } else {
       //
-      // This is the non-chunk transfer, send request header first and then
-      // handle the following request message body using chunk transfer.
+      // This is read from URI.
       //
       Status = HttpIoSendRequest (
                  &(Instance->HttpIo),
-                 (SendNonChunkProcess == HttpIoSendNonChunkContent) ? NULL : RequestMessage->Data.Request,
-                 (SendNonChunkProcess == HttpIoSendNonChunkContent) ? 0 : RequestMessage->HeaderCount,
-                 (SendNonChunkProcess == HttpIoSendNonChunkContent) ? NULL : RequestMessage->Headers,
-                 (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent) ? 0 : RequestMessage->BodyLength,
-                 (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent) ? NULL : RequestMessage->Body
+                 RequestMessage->Data.Request,
+                 RequestMessage->HeaderCount,
+                 RequestMessage->Headers,
+                 RequestMessage->BodyLength,
+                 RequestMessage->Body
                  );
     }
   } else {
     //
-    // This is read from URI.
+    // This is normal request to URI.
     //
     Status = HttpIoSendRequest (
                &(Instance->HttpIo),
@@ -167,6 +189,10 @@ ReSendRequest:;
   }
 
   if (EFI_ERROR (Status)) {
+    //
+    // Communication failure happens. Reset the session.
+    //
+    ResetHttpTslSession (Instance);
     goto ON_EXIT;
   }
 
@@ -195,7 +221,7 @@ ReSendRequest:;
     goto ON_EXIT;
   }
 
-  DEBUG ((DEBUG_INFO, "Receiving HTTP response and headers...\n"));
+  DEBUG ((DEBUG_REDFISH_NETWORK, "Receiving HTTP response and headers...\n"));
   Status = RedfishCheckHttpReceiveStatus (
              Instance,
              HttpIoRecvResponse (
@@ -213,23 +239,35 @@ ReSendRequest:;
   //
   // Restore the headers if it ever changed in RedfishHttpAddExpectation().
   //
-  if (RequestMessage->Headers != PreservedRequestHeaders) {
+  if (FixedPcdGetBool (PcdRedfishRestExAddingExpect) && (RequestMessage->Headers != PreservedRequestHeaders)) {
     FreePool (RequestMessage->Headers);
     RequestMessage->Headers = PreservedRequestHeaders; // Restore headers before we adding "Expect".
     RequestMessage->HeaderCount--;                     // Minus one header count for "Expect".
   }
 
-  DEBUG ((DEBUG_INFO, "HTTP Response StatusCode - %d:", ResponseData->Response.StatusCode));
+  DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP Response StatusCode - %d:", ResponseData->Response.StatusCode));
   if (ResponseData->Response.StatusCode == HTTP_STATUS_200_OK) {
-    DEBUG ((DEBUG_INFO, "HTTP_STATUS_200_OK\n"));
+    DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_200_OK\n"));
 
-    if (SendChunkProcess == HttpIoSendChunkHeaderZeroContent) {
-      DEBUG ((DEBUG_INFO, "This is chunk transfer, start to send all chunks.", ResponseData->Response.StatusCode));
+    if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode) && (SendChunkProcess == HttpIoSendChunkHeaderZeroContent)) {
+      DEBUG ((DEBUG_REDFISH_NETWORK, "This is chunk transfer, start to send all chunks - %d.", ResponseData->Response.StatusCode));
       SendChunkProcess++;
       goto ReSendRequest;
     }
+  } else if (ResponseData->Response.StatusCode == HTTP_STATUS_204_NO_CONTENT) {
+    DEBUG ((DEBUG_MANAGEABILITY, "HTTP_STATUS_204_NO_CONTENT\n"));
+
+    if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode) && (SendChunkProcess == HttpIoSendChunkHeaderZeroContent)) {
+      DEBUG ((DEBUG_MANAGEABILITY, "This is chunk transfer, start to send all chunks - %d.", ResponseData->Response.StatusCode));
+      SendChunkProcess++;
+      goto ReSendRequest;
+    }
+  } else if (ResponseData->Response.StatusCode == HTTP_STATUS_201_CREATED) {
+    DEBUG ((DEBUG_MANAGEABILITY, "HTTP_STATUS_201_CREATED\n"));
+  } else if (ResponseData->Response.StatusCode == HTTP_STATUS_202_ACCEPTED) {
+    DEBUG ((DEBUG_MANAGEABILITY, "HTTP_STATUS_202_ACCEPTED\n"));
   } else if (ResponseData->Response.StatusCode == HTTP_STATUS_413_REQUEST_ENTITY_TOO_LARGE) {
-    DEBUG ((DEBUG_INFO, "HTTP_STATUS_413_REQUEST_ENTITY_TOO_LARGE\n"));
+    DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_413_REQUEST_ENTITY_TOO_LARGE\n"));
 
     Status = EFI_BAD_BUFFER_SIZE;
     goto ON_EXIT;
@@ -239,25 +277,25 @@ ReSendRequest:;
     Status = EFI_ACCESS_DENIED;
     goto ON_EXIT;
   } else if (ResponseData->Response.StatusCode == HTTP_STATUS_400_BAD_REQUEST) {
-    DEBUG ((DEBUG_INFO, "HTTP_STATUS_400_BAD_REQUEST\n"));
-    if (SendChunkProcess == HttpIoSendChunkHeaderZeroContent) {
-      DEBUG ((DEBUG_INFO, "Bad request may caused by zero length chunk. Try to send all chunks...\n"));
+    DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_400_BAD_REQUEST\n"));
+    if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode) && (SendChunkProcess == HttpIoSendChunkHeaderZeroContent)) {
+      DEBUG ((DEBUG_REDFISH_NETWORK, "Bad request may caused by zero length chunk. Try to send all chunks...\n"));
       SendChunkProcess++;
       goto ReSendRequest;
     }
   } else if (ResponseData->Response.StatusCode == HTTP_STATUS_100_CONTINUE) {
-    DEBUG ((DEBUG_INFO, "HTTP_STATUS_100_CONTINUE\n"));
-    if (SendChunkProcess == HttpIoSendChunkHeaderZeroContent) {
+    DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_100_CONTINUE\n"));
+    if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode) && (SendChunkProcess == HttpIoSendChunkHeaderZeroContent)) {
       //
       // We get HTTP_STATUS_100_CONTINUE to send the body using chunk transfer.
       //
-      DEBUG ((DEBUG_INFO, "HTTP_STATUS_100_CONTINUE for chunk transfer...\n"));
+      DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_100_CONTINUE for chunk transfer...\n"));
       SendChunkProcess++;
       goto ReSendRequest;
     }
 
-    if (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent) {
-      DEBUG ((DEBUG_INFO, "HTTP_STATUS_100_CONTINUE for non chunk transfer...\n"));
+    if (FixedPcdGetBool (PcdRedfishRestExChunkRequestMode) && (SendNonChunkProcess == HttpIoSendNonChunkHeaderZeroContent)) {
+      DEBUG ((DEBUG_REDFISH_NETWORK, "HTTP_STATUS_100_CONTINUE for non chunk transfer...\n"));
       SendNonChunkProcess++;
       goto ReSendRequest;
     }
@@ -281,7 +319,20 @@ ReSendRequest:;
     }
   } else {
     DEBUG ((DEBUG_ERROR, "This HTTP Status is not handled!\n"));
+    DumpHttpStatusCode (DEBUG_REDFISH_NETWORK, ResponseData->Response.StatusCode);
     Status = EFI_UNSUPPORTED;
+
+    //
+    // Deliver status code back to caller so caller can handle it.
+    //
+    ResponseMessage->Data.Response = AllocateZeroPool (sizeof (EFI_HTTP_RESPONSE_DATA));
+    if (ResponseMessage->Data.Response == NULL) {
+      Status = EFI_OUT_OF_RESOURCES;
+      goto ON_EXIT;
+    }
+
+    ResponseMessage->Data.Response->StatusCode = ResponseData->Response.StatusCode;
+
     goto ON_EXIT;
   }
 
@@ -394,27 +445,15 @@ ReSendRequest:;
       TotalReceivedSize += ResponseData->BodyLength;
     }
 
-    DEBUG ((DEBUG_INFO, "Total of lengh of Response :%d\n", TotalReceivedSize));
+    DEBUG ((DEBUG_REDFISH_NETWORK, "Total of length of Response :%d\n", TotalReceivedSize));
   }
 
-  DEBUG ((DEBUG_INFO, "RedfishRestExSendReceive()- EFI_STATUS: %r\n", Status));
+  DEBUG ((DEBUG_REDFISH_NETWORK, "RedfishRestExSendReceive()- EFI_STATUS: %r\n", Status));
 
 ON_EXIT:
 
   if (ResponseData != NULL) {
     FreePool (ResponseData);
-  }
-
-  if (EFI_ERROR (Status)) {
-    if (ResponseMessage->Data.Response != NULL) {
-      FreePool (ResponseMessage->Data.Response);
-      ResponseMessage->Data.Response = NULL;
-    }
-
-    if (ResponseMessage->Body != NULL) {
-      FreePool (ResponseMessage->Body);
-      ResponseMessage->Body = NULL;
-    }
   }
 
   return Status;

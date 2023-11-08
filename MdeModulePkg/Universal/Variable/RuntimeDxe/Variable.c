@@ -2453,7 +2453,7 @@ VariableServiceGetVariable (
   AcquireLockOnlyAtBootTime (&mVariableModuleGlobal->VariableGlobal.VariableServicesLock);
 
   Status = FindVariable (VariableName, VendorGuid, &Variable, &mVariableModuleGlobal->VariableGlobal, FALSE);
-  if ((Variable.CurrPtr == NULL) || EFI_ERROR (Status)) {
+  if (EFI_ERROR (Status) || (Variable.CurrPtr == NULL)) {
     goto Done;
   }
 
@@ -2676,7 +2676,11 @@ VariableServiceSetVariable (
     //
     // Only EFI_VARIABLE_NON_VOLATILE attribute is invalid
     //
-    return EFI_INVALID_PARAMETER;
+    if ((Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS) != 0) {
+      return EFI_UNSUPPORTED;
+    } else {
+      return EFI_INVALID_PARAMETER;
+    }
   } else if ((Attributes & VARIABLE_ATTRIBUTE_AT_AW) != 0) {
     if (!mVariableModuleGlobal->VariableGlobal.AuthSupport) {
       //
@@ -2766,7 +2770,7 @@ VariableServiceSetVariable (
         DEBUG ((
           DEBUG_ERROR,
           "%a: Failed to set variable '%s' with Guid %g\n",
-          __FUNCTION__,
+          __func__,
           VariableName,
           VendorGuid
           ));
@@ -2788,7 +2792,7 @@ VariableServiceSetVariable (
         DEBUG ((
           DEBUG_ERROR,
           "%a: Failed to set variable '%s' with Guid %g\n",
-          __FUNCTION__,
+          __func__,
           VariableName,
           VendorGuid
           ));
@@ -2810,7 +2814,7 @@ VariableServiceSetVariable (
         DEBUG ((
           DEBUG_ERROR,
           "%a: Failed to set variable '%s' with Guid %g\n",
-          __FUNCTION__,
+          __func__,
           VariableName,
           VendorGuid
           ));

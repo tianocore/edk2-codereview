@@ -381,19 +381,6 @@ GoIdle_Exit:
   //
   MmioWrite32 ((UINTN)&CrbReg->CrbControlRequest, PTP_CRB_CONTROL_AREA_REQUEST_GO_IDLE);
 
-  //
-  // Only enforce Idle state transition if execution fails when CRBIdleBypass==1
-  // Leave regular Idle delay at the beginning of next command execution
-  //
-  if (GetCachedIdleByPass () == 1) {
-    Status = PtpCrbWaitRegisterBits (
-               &CrbReg->CrbControlStatus,
-               PTP_CRB_CONTROL_AREA_STATUS_TPM_IDLE,
-               0,
-               PTP_TIMEOUT_C
-               );
-  }
-
   return Status;
 }
 
@@ -477,7 +464,11 @@ Tpm2GetPtpInterface (
     return Tpm2PtpInterfaceFifo;
   }
 
-  return Tpm2PtpInterfaceTis;
+  if (InterfaceId.Bits.InterfaceType == PTP_INTERFACE_IDENTIFIER_INTERFACE_TYPE_TIS) {
+    return Tpm2PtpInterfaceTis;
+  }
+
+  return Tpm2PtpInterfaceMax;
 }
 
 /**

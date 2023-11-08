@@ -100,7 +100,7 @@ RefreshMemTypeInfo (
     // If the UEFI variable couldn't be read for some other reason, we
     // similarly can't use it for udpating mMemoryTypeInformation.
     //
-    DEBUG ((DEBUG_ERROR, "%a: GetVariable(): %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a: GetVariable(): %r\n", __func__, Status));
     return;
   }
 
@@ -111,7 +111,7 @@ RefreshMemTypeInfo (
     DEBUG ((
       DEBUG_ERROR,
       "%a: invalid UEFI variable size %Lu\n",
-      __FUNCTION__,
+      __func__,
       (UINT64)DataSize
       ));
     return;
@@ -151,7 +151,7 @@ RefreshMemTypeInfo (
       DEBUG ((
         DEBUG_VERBOSE,
         "%a: Type 0x%x: NumberOfPages 0x%x -> 0x%x\n",
-        __FUNCTION__,
+        __func__,
         HobRecord->Type,
         HobRecord->NumberOfPages,
         VariableRecord->NumberOfPages
@@ -183,7 +183,7 @@ OnReadOnlyVariable2Available (
   IN VOID                       *Ppi
   )
 {
-  DEBUG ((DEBUG_VERBOSE, "%a\n", __FUNCTION__));
+  DEBUG ((DEBUG_VERBOSE, "%a\n", __func__));
 
   RefreshMemTypeInfo (Ppi);
   BuildMemTypeInfoHob ();
@@ -203,12 +203,12 @@ STATIC CONST EFI_PEI_NOTIFY_DESCRIPTOR  mReadOnlyVariable2Notify = {
 
 VOID
 MemTypeInfoInitialization (
-  VOID
+  IN OUT EFI_HOB_PLATFORM_INFO  *PlatformInfoHob
   )
 {
   EFI_STATUS  Status;
 
-  if (!mPlatformInfoHob.SmmSmramRequire) {
+  if (!PlatformInfoHob->SmmSmramRequire) {
     //
     // EFI_PEI_READ_ONLY_VARIABLE2_PPI will never be available; install
     // the default memory type information HOB right away.
@@ -222,7 +222,7 @@ MemTypeInfoInitialization (
     DEBUG ((
       DEBUG_ERROR,
       "%a: failed to set up R/O Variable 2 callback: %r\n",
-      __FUNCTION__,
+      __func__,
       Status
       ));
     ASSERT (FALSE);

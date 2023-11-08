@@ -570,7 +570,7 @@ AmlCodeGenRdDWordMemory (
   IN        BOOLEAN IsPosDecode,
   IN        BOOLEAN IsMinFixed,
   IN        BOOLEAN IsMaxFixed,
-  IN        UINT8 Cacheable,
+  IN        AML_MEMORY_ATTRIBUTES_MEM Cacheable,
   IN        BOOLEAN IsReadWrite,
   IN        UINT32 AddressGranularity,
   IN        UINT32 AddressMinimum,
@@ -579,7 +579,7 @@ AmlCodeGenRdDWordMemory (
   IN        UINT32 RangeLength,
   IN        UINT8 ResourceSourceIndex,
   IN  CONST CHAR8 *ResourceSource,
-  IN        UINT8 MemoryRangeType,
+  IN        AML_MEMORY_ATTRIBUTES_MTP MemoryRangeType,
   IN        BOOLEAN IsTypeStatic,
   IN        AML_OBJECT_NODE_HANDLE NameOpNode, OPTIONAL
   OUT       AML_DATA_NODE_HANDLE    *NewRdNode  OPTIONAL
@@ -1012,6 +1012,96 @@ AmlCodeGenRdQWordSpace (
   return LinkRdNode (RdNode, NameOpNode, NewRdNode);
 }
 
+/** Code generation for the "QWordIO ()" ASL function.
+
+  The Resource Data effectively created is a QWord Address Space Resource
+  Data. Cf ACPI 6.4:
+   - s6.4.3.5.1 "QWord Address Space Descriptor".
+   - s19.6.109 "QWordIO".
+
+  The created resource data node can be:
+   - appended to the list of resource data elements of the NameOpNode.
+     In such case NameOpNode must be defined by a the "Name ()" ASL statement
+     and initially contain a "ResourceTemplate ()".
+   - returned through the NewRdNode parameter.
+
+  See ACPI 6.4 spec, s19.6.109 for more.
+
+  @param [in]  IsResourceConsumer   ResourceUsage parameter.
+  @param [in]  IsMinFixed           Minimum address is fixed.
+  @param [in]  IsMaxFixed           Maximum address is fixed.
+  @param [in]  IsPosDecode          Decode parameter
+  @param [in]  IsaRanges            Possible values are:
+                                     0-Reserved
+                                     1-NonISAOnly
+                                     2-ISAOnly
+                                     3-EntireRange
+  @param [in]  AddressGranularity   Address granularity.
+  @param [in]  AddressMinimum       Minimum address.
+  @param [in]  AddressMaximum       Maximum address.
+  @param [in]  AddressTranslation   Address translation.
+  @param [in]  RangeLength          Range length.
+  @param [in]  ResourceSourceIndex  Resource Source index.
+                                    Unused. Must be 0.
+  @param [in]  ResourceSource       Resource Source.
+                                    Unused. Must be NULL.
+  @param [in]  IsDenseTranslation   TranslationDensity parameter.
+  @param [in]  IsTypeStatic         TranslationType parameter.
+  @param [in]  NameOpNode           NameOp object node defining a named object.
+                                    If provided, append the new resource data
+                                    node to the list of resource data elements
+                                    of this node.
+  @param [out] NewRdNode            If provided and success,
+                                    contain the created node.
+
+  @retval EFI_SUCCESS             The function completed successfully.
+  @retval EFI_INVALID_PARAMETER   Invalid parameter.
+  @retval EFI_OUT_OF_RESOURCES    Could not allocate memory.
+**/
+EFI_STATUS
+EFIAPI
+AmlCodeGenRdQWordIo (
+  IN        BOOLEAN IsResourceConsumer,
+  IN        BOOLEAN IsMinFixed,
+  IN        BOOLEAN IsMaxFixed,
+  IN        BOOLEAN IsPosDecode,
+  IN        UINT8 IsaRanges,
+  IN        UINT64 AddressGranularity,
+  IN        UINT64 AddressMinimum,
+  IN        UINT64 AddressMaximum,
+  IN        UINT64 AddressTranslation,
+  IN        UINT64 RangeLength,
+  IN        UINT8 ResourceSourceIndex,
+  IN  CONST CHAR8 *ResourceSource,
+  IN        BOOLEAN IsDenseTranslation,
+  IN        BOOLEAN IsTypeStatic,
+  IN        AML_OBJECT_NODE_HANDLE NameOpNode, OPTIONAL
+  OUT       AML_DATA_NODE_HANDLE    *NewRdNode  OPTIONAL
+  )
+{
+  return AmlCodeGenRdQWordSpace (
+           ACPI_ADDRESS_SPACE_TYPE_IO,
+           IsResourceConsumer,
+           IsPosDecode,
+           IsMinFixed,
+           IsMaxFixed,
+           RdIoRangeSpecificFlags (
+             IsaRanges,
+             IsDenseTranslation,
+             IsTypeStatic
+             ),
+           AddressGranularity,
+           AddressMinimum,
+           AddressMaximum,
+           AddressTranslation,
+           RangeLength,
+           ResourceSourceIndex,
+           ResourceSource,
+           NameOpNode,
+           NewRdNode
+           );
+}
+
 /** Code generation for the "QWordMemory ()" ASL function.
 
   The Resource Data effectively created is a QWord Address Space Resource
@@ -1071,7 +1161,7 @@ AmlCodeGenRdQWordMemory (
   IN        BOOLEAN IsPosDecode,
   IN        BOOLEAN IsMinFixed,
   IN        BOOLEAN IsMaxFixed,
-  IN        UINT8 Cacheable,
+  IN        AML_MEMORY_ATTRIBUTES_MEM Cacheable,
   IN        BOOLEAN IsReadWrite,
   IN        UINT64 AddressGranularity,
   IN        UINT64 AddressMinimum,
@@ -1080,7 +1170,7 @@ AmlCodeGenRdQWordMemory (
   IN        UINT64 RangeLength,
   IN        UINT8 ResourceSourceIndex,
   IN  CONST CHAR8 *ResourceSource,
-  IN        UINT8 MemoryRangeType,
+  IN        AML_MEMORY_ATTRIBUTES_MTP MemoryRangeType,
   IN        BOOLEAN IsTypeStatic,
   IN        AML_OBJECT_NODE_HANDLE NameOpNode, OPTIONAL
   OUT       AML_DATA_NODE_HANDLE    *NewRdNode  OPTIONAL
@@ -1257,7 +1347,12 @@ AmlCodeGenRdRegister (
   AML_DATA_NODE                         *RdNode;
   EFI_ACPI_GENERIC_REGISTER_DESCRIPTOR  RdRegister;
 
-  if ((AccessSize > EFI_ACPI_6_4_QWORD)  ||
+  // Cf. ACPI 6.4, s14.7 Referencing the PCC address space
+  // The AccessSize represents the Subspace Id for the PCC address space.
+  if (((AddressSpace == EFI_ACPI_6_4_PLATFORM_COMMUNICATION_CHANNEL) &&
+       (AccessSize > 256)) ||
+      ((AddressSpace != EFI_ACPI_6_4_PLATFORM_COMMUNICATION_CHANNEL) &&
+       (AccessSize > EFI_ACPI_6_4_QWORD)) ||
       ((NameOpNode == NULL) && (NewRdNode == NULL)))
   {
     ASSERT (0);
@@ -1406,79 +1501,3 @@ error_handler:
 
   return Status;
 }
-
-// DEPRECATED APIS
-#ifndef DISABLE_NEW_DEPRECATED_INTERFACES
-
-/** DEPRECATED API
-
-  Add an Interrupt Resource Data node.
-
-  This function creates a Resource Data element corresponding to the
-  "Interrupt ()" ASL function, stores it in an AML Data Node.
-
-  It then adds it after the input CurrRdNode in the list of resource data
-  element.
-
-  The Resource Data effectively created is an Extended Interrupt Resource
-  Data. See ACPI 6.3 specification, s6.4.3.6 "Extended Interrupt Descriptor"
-  for more information about Extended Interrupt Resource Data.
-
-  The Extended Interrupt contains one single interrupt.
-
-  This function allocates memory to create a data node. It is the caller's
-  responsibility to either:
-   - attach this node to an AML tree;
-   - delete this node.
-
-  Note: The _CRS node must be defined using the ASL Name () function.
-        e.g. Name (_CRS, ResourceTemplate () {
-               ...
-             }
-
-  @ingroup UserApis
-
-  @param  [in]  NameOpCrsNode    NameOp object node defining a "_CRS" object.
-                                 Must have an OpCode=AML_NAME_OP, SubOpCode=0.
-                                 NameOp object nodes are defined in ASL
-                                 using the "Name ()" function.
-  @param  [in]  ResourceConsumer The device consumes the specified interrupt
-                                 or produces it for use by a child device.
-  @param  [in]  EdgeTriggered    The interrupt is edge triggered or
-                                 level triggered.
-  @param  [in]  ActiveLow        The interrupt is active-high or active-low.
-  @param  [in]  Shared           The interrupt can be shared with other
-                                 devices or not (Exclusive).
-  @param  [in]  IrqList          Interrupt list. Must be non-NULL.
-  @param  [in]  IrqCount         Interrupt count. Must be non-zero.
-
-
-  @retval EFI_SUCCESS             The function completed successfully.
-  @retval EFI_INVALID_PARAMETER   Invalid parameter.
-  @retval EFI_OUT_OF_RESOURCES    Could not allocate memory.
-**/
-EFI_STATUS
-EFIAPI
-AmlCodeGenCrsAddRdInterrupt (
-  IN  AML_OBJECT_NODE_HANDLE  NameOpCrsNode,
-  IN  BOOLEAN                 ResourceConsumer,
-  IN  BOOLEAN                 EdgeTriggered,
-  IN  BOOLEAN                 ActiveLow,
-  IN  BOOLEAN                 Shared,
-  IN  UINT32                  *IrqList,
-  IN  UINT8                   IrqCount
-  )
-{
-  return AmlCodeGenRdInterrupt (
-           ResourceConsumer,
-           EdgeTriggered,
-           ActiveLow,
-           Shared,
-           IrqList,
-           IrqCount,
-           NameOpCrsNode,
-           NULL
-           );
-}
-
-#endif // DISABLE_NEW_DEPRECATED_INTERFACES
