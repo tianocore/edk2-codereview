@@ -72,7 +72,7 @@
 # L: devel@edk2.groups.io
 # F: *
 # F: */
-#
+
 # Tianocore Stewards
 # ------------------
 # F: *
@@ -84,20 +84,12 @@
 # Responsible Disclosure, Reporting Security Issues
 # -------------------------------------------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/Security
-#
+
 # EDK II Releases:
 # ----------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Release-Planning
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-#
-# UEFI Shell Binaries (ShellBinPkg.zip) from EDK II Releases:
-# -----------------------------------------------------------
-# W: https://github.com/tianocore/edk2/releases/
-# M: Ray Ni <ray.ni@intel.com> [niruiyu]                        (Ia32/X64)
-# M: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]           (Ia32/X64)
-# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]           (ARM/AArch64)
-# M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel] (ARM/AArch64)
-#
+
 # EDK II Architectures:
 # ---------------------
 # ARM, AARCH64
@@ -105,39 +97,56 @@
 # F: */Arm/
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
-#
+# M: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
+
 # RISCV64
 # F: */RiscV64/
 # M: Sunil V L <sunilvl@ventanamicro.com> [vlsunil]
 # R: Andrei Warkentin <andrei.warkentin@intel.com> [andreiw]
-#
+
 # LOONGARCH64
 # F: */LoongArch64/
 # M: Chao Li <lichao@loongson.cn> [kilaterlee]
 # M: Baoqi Zhang <zhangbaoqi@loongson.cn> [zhangbaoqi-ls]
 # R: Dongyan Qian <qiandongyan@loongson.cn> [MarsDoge]
-#
+
 # EDK II Continuous Integration:
 # ------------------------------
 # .azurepipelines/
 # F: .azurepipelines/
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# M: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.azurepipelines/**  @makubacki @spbrogan
 
+# .devcontainer/
+# F: .devcontainer/
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
+# R: Chris Fernald <chris.fernald@outlook.com> [cfernald]
 /.devcontainer/**  @makubacki
 
 # .github/
 # F: .github/
+# X: .github/CODEOWNERS
+# X: .github/REVIEWERS
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 /.github/**  @spbrogan @makubacki
 
-# Tianocore Stewards must approve changes to CODEOWNERS and REVIEWERS
+# .github/CODEOWNERS
+# F: .github/CODEOWNERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 /.github/CODEOWNERS   @ajfish  @leiflindholm  @mdkinney
+
+# .github/REVIEWERS
+# F: .github/REVIEWERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 /.github/REVIEWERS    @ajfish  @leiflindholm  @mdkinney
 
 # .mergify/
@@ -145,7 +154,6 @@
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 # R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# R: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
 /.mergify/**  @mdkinney @lgao4
 
 # .pytool/
@@ -164,7 +172,7 @@
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
 # R: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
-/ArmPkg/**  @leiflindholm @ardbiesheuvel
+/ArmPkg/**             @leiflindholm @ardbiesheuvel
 /ArmPkg/**/AArch64/**  @ardbiesheuvel @leiflindholm @samimujawar
 /ArmPkg/**/Arm/**      @ardbiesheuvel @leiflindholm @samimujawar
 
@@ -173,7 +181,7 @@
 # W: https://github.com/tianocore/tianocore.github.io/wiki/ArmPlatformPkg
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
-/ArmPlatformPkg/**  @leiflindholm @ardbiesheuvel
+/ArmPlatformPkg/**             @leiflindholm @ardbiesheuvel
 /ArmPlatformPkg/**/AArch64/**  @ardbiesheuvel @leiflindholm @samimujawar
 /ArmPlatformPkg/**/Arm/**      @ardbiesheuvel @leiflindholm @samimujawar
 
@@ -187,15 +195,6 @@
 /ArmVirtPkg/**             @ardbiesheuvel
 /ArmVirtPkg/**/AArch64/**  @ardbiesheuvel @leiflindholm @samimujawar
 /ArmVirtPkg/**/Arm/**      @ardbiesheuvel @leiflindholm @samimujawar
-
-# ArmVirtPkg: modules used on Xen
-# F: ArmVirtPkg/ArmVirtXen.*
-# F: ArmVirtPkg/Library/XenArmGenericTimerVirtCounterLib/
-# F: ArmVirtPkg/Library/XenVirtMemInfoLib/
-# F: ArmVirtPkg/PrePi/
-# F: ArmVirtPkg/XenAcpiPlatformDxe/
-# F: ArmVirtPkg/XenPlatformHasAcpiDtDxe/
-# F: ArmVirtPkg/XenioFdtDxe/
 
 # BaseTools
 # F: BaseTools/
@@ -420,16 +419,14 @@
 # R: Jiaxin Wu <jiaxin.wu@intel.com> [jiaxinwu]
 # R: Ray Ni <ray.ni@intel.com> [niruiyu]
 
+# MdeModulePkg: Pei Core
+# F: MdeModulePkg/Core/Pei/
+# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
+
 # MdeModulePkg: Reset modules
 # F: MdeModulePkg/*Reset*/
 # F: MdeModulePkg/Include/*Reset*.h
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-
-# MdeModulePkg: Pei Core
-# F: MdeModulePkg/Core/Pei/
-# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-# R: Debkumar De <debkumar.de@intel.com> [dde01]
-# R: Catharine West <catharine.west@intel.com> [catharine-intl]
 
 # MdeModulePkg: Serial modules
 # F: MdeModulePkg/*Serial*/
@@ -547,7 +544,6 @@
 /OvmfPkg/**/AArch64/**  @ardbiesheuvel @jyao1 @leiflindholm
 /OvmfPkg/**/Arm/**      @ardbiesheuvel @jyao1 @leiflindholm
 
-#
 # OvmfPkg: bhyve-related modules
 # F: OvmfPkg/Bhyve/
 # F: OvmfPkg/Include/IndustryStandard/Bhyve.h
@@ -586,11 +582,10 @@
 # F: OvmfPkg/ResetVector/
 # F: OvmfPkg/Sec/
 # R: Erdem Aktas <erdemaktas@google.com> [ruleof2]
-# R: James Bottomley <jejb@linux.ibm.com> [jejb]
 # R: Jiewen Yao <jiewen.yao@intel.com> [jyao1]
 # R: Min Xu <min.m.xu@intel.com> [mxu9]
 # R: Tom Lendacky <thomas.lendacky@amd.com> [tlendacky]
-
+# R: Michael Roth <michael.roth@amd.com> [mdroth]
 # OvmfPkg: FDT related modules
 # F: OvmfPkg/Fdt
 # R: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
@@ -599,7 +594,7 @@
 
 # OvmfPkg: LsiScsi driver
 # F: OvmfPkg/LsiScsiDxe/
-# R: Gary Lin <gary.lin@hpe.com> [lcp]
+# R: Gary Lin <glin@suse.com> [lcp]
 
 # OvmfPkg: TCG- and TPM2-related modules
 # F: OvmfPkg/Include/IndustryStandard/QemuTpm.h
@@ -745,7 +740,6 @@
 # M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# R: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
 # S: Maintained
 /UnitTestFrameworkPkg/**  @mdkinney @makubacki
 

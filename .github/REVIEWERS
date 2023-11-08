@@ -72,7 +72,7 @@
 # L: devel@edk2.groups.io
 # F: *
 # F: */
-#
+
 # Tianocore Stewards
 # ------------------
 # F: *
@@ -83,20 +83,12 @@
 # Responsible Disclosure, Reporting Security Issues
 # -------------------------------------------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/Security
-#
+
 # EDK II Releases:
 # ----------------
 # W: https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Release-Planning
 # M: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-#
-# UEFI Shell Binaries (ShellBinPkg.zip) from EDK II Releases:
-# -----------------------------------------------------------
-# W: https://github.com/tianocore/edk2/releases/
-# M: Ray Ni <ray.ni@intel.com> [niruiyu]                        (Ia32/X64)
-# M: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]           (Ia32/X64)
-# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]           (ARM/AArch64)
-# M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel] (ARM/AArch64)
-#
+
 # EDK II Architectures:
 # ---------------------
 # ARM, AARCH64
@@ -104,24 +96,25 @@
 # F: */Arm/
 # M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
 # M: Ard Biesheuvel <ardb+tianocore@kernel.org> [ardbiesheuvel]
-#
+# M: Sami Mujawar <sami.mujawar@arm.com> [samimujawar]
+
 # RISCV64
 # F: */RiscV64/
 # M: Sunil V L <sunilvl@ventanamicro.com> [vlsunil]
 # R: Andrei Warkentin <andrei.warkentin@intel.com> [andreiw]
-#
+
 # LOONGARCH64
 # F: */LoongArch64/
 # M: Chao Li <lichao@loongson.cn> [kilaterlee]
 # M: Baoqi Zhang <zhangbaoqi@loongson.cn> [zhangbaoqi-ls]
 # R: Dongyan Qian <qiandongyan@loongson.cn> [MarsDoge]
-#
+
 # EDK II Continuous Integration:
 # ------------------------------
 # .azurepipelines/
 # F: .azurepipelines/
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# M: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.azurepipelines/**  @mdkinney @lgao4
@@ -134,11 +127,25 @@
 
 # .github/
 # F: .github/
+# X: .github/CODEOWNERS
+# X: .github/REVIEWERS
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
 # M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
-/.github/**            @mdkinney
+/.github/**  @mdkinney
+
+# .github/CODEOWNERS
+# F: .github/CODEOWNERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 /.github/CODEOWNERS
+
+# .github/REVIEWERS
+# F: .github/REVIEWERS
+# M: Andrew Fish <afish@apple.com> [ajfish]
+# M: Leif Lindholm <quic_llindhol@quicinc.com> [leiflindholm]
+# M: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 /.github/REVIEWERS
 
 # .mergify/
@@ -151,7 +158,7 @@
 # .pytool/
 # F: .pytool/
 # M: Sean Brogan <sean.brogan@microsoft.com> [spbrogan]
-# M: Bret Barkelew <Bret.Barkelew@microsoft.com> [corthon]
+# M: Michael Kubacki <mikuback@linux.microsoft.com> [makubacki]
 # R: Michael D Kinney <michael.d.kinney@intel.com> [mdkinney]
 # R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
 /.pytool/**  @mdkinney @lgao4
@@ -432,6 +439,7 @@
 /MdeModulePkg/Include/Library/CustomizedDisplayLib.h  @dandanbi
 /MdeModulePkg/Include/Protocol/DisplayProtocol.h      @dandanbi
 /MdeModulePkg/Library/CustomizedDisplayLib/**         @dandanbi
+/MdeModulePkg/Library/VarCheckHiiLib/**               @dandanbi
 /MdeModulePkg/Universal/DisplayEngineDxe/**           @dandanbi
 /MdeModulePkg/Universal/DriverSampleDxe/**            @dandanbi
 /MdeModulePkg/Universal/SetupBrowserDxe/**            @dandanbi
@@ -448,6 +456,11 @@
 /MdeModulePkg/Include/*/*Smi*.h  @jiaxinwu @niruiyu
 /MdeModulePkg/Include/*/*Smm*.h  @jiaxinwu @niruiyu
 
+# MdeModulePkg: Pei Core
+# F: MdeModulePkg/Core/Pei/
+# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
+/MdeModulePkg/Core/Pei/*Reset*/**  @ZhichaoGao
+
 # MdeModulePkg: Reset modules
 # F: MdeModulePkg/*Reset*/
 # F: MdeModulePkg/Include/*Reset*.h
@@ -455,16 +468,11 @@
 /MdeModulePkg/**/*Reset*/          @ZhichaoGao
 /MdeModulePkg/Include/*/*Reset*.h  @ZhichaoGao
 
-# MdeModulePkg: Pei Core
-# F: MdeModulePkg/Core/Pei/
-# R: Liming Gao <gaoliming@byosoft.com.cn> [lgao4]
-/MdeModulePkg/Core/Pei/*Reset*/**  @ZhichaoGao
-
 # MdeModulePkg: Serial modules
 # F: MdeModulePkg/*Serial*/
 # F: MdeModulePkg/Include/*SerialPort*.h
 # R: Zhichao Gao <zhichao.gao@intel.com> [ZhichaoGao]
-/MdeModulePkg/**/*Serial*/**            @ZhichaoGao @niruiyu
+/MdeModulePkg/**/*Serial*/**            @ZhichaoGao
 /MdeModulePkg/Include/*/*SerialPort*.h  @ZhichaoGao
 
 # MdeModulePkg: SMBIOS modules
@@ -519,27 +527,21 @@
 /MdeModulePkg/Library/**/*Ipmi*.*  @abdattar @nicklela
 
 ###
-### MdeModulePkg Extra rules for conflicts
+### MdeModulePkg rules for reviewers listed in more than one section
 ###
-/MdeModulePkg/Library/BaseSerialPortLib16550/**                  @ZhichaoGao
-/MdeModulePkg/Library/PlatformHookLibSerialPortPpi/**            @ZhichaoGao
-/MdeModulePkg/Universal/SerialDxe/**                             @ZhichaoGao
+
+# MdeModulePkg: BDS Modules AND HII/UI Modules
 /MdeModulePkg/**/*BootManagerUi*/**                              @ZhichaoGao @dandanbi @niruiyu
-/MdeModulePkg/Library/SmmCorePerformanceLib/**                   @jiaxinwu @niruiyu
-/MdeModulePkg/Library/PiSmmCoreMemoryAllocationLib/**            @jiaxinwu @niruiyu
-/MdeModulePkg/Library/SmmMemoryAllocationProfileLib/**           @jiaxinwu @niruiyu
-/MdeModulePkg/Library/SmmPerformanceLib/**                       @jiaxinwu @niruiyu
-/MdeModulePkg/Library/SmmReportStatusCodeLib/**                  @jiaxinwu @niruiyu
-/MdeModulePkg/Include/Protocol/Smm*.h                            @jiaxinwu @niruiyu
-/MdeModulePkg/Include/Ppi/Smm*.h                                 @jiaxinwu @niruiyu
-/MdeModulePkg/Include/*/*Smm*LockBox*.h                          @jiaxinwu @niruiyu
-/MdeModulePkg/Include/*/PiSmm*.h                                 @jiaxinwu @niruiyu
-/MdeModulePkg/Include/*/S3Smm*.h                                 @jiaxinwu @niruiyu
-/MdeModulePkg/Universal/**/Smm/**                                @jiaxinwu @niruiyu
+
+# MdeModulePkg: SMM/MM Modules AND ACPI
 /MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableSmm/**  @LiuZhiguang001 @dandanbi @niruiyu @jiaxinwu
 /MdeModulePkg/Universal/Acpi/SmmS3SaveState/**                   @LiuZhiguang001 @dandanbi @niruiyu @jiaxinwu
+
+# MdeModulePkg: SMM/MM AND Manageability modules
 /MdeModulePkg/Library/SmmIpmiLibSmmIpmiProtocol/                 @abdattar @jiaxinwu @nicklela @niruiyu
-/MdeModulePkg/**/VarCheckHiiLib/**                               @dandanbi
+
+# MdeModulePkg: Bus AND Serial modules
+/MdeModulePkg/Bus/Pci/PciSioSerialDxe/**  @niruiyu @ZhichaoGao
 
 # MdePkg
 # F: MdePkg/
@@ -679,7 +681,7 @@
 
 # OvmfPkg: LsiScsi driver
 # F: OvmfPkg/LsiScsiDxe/
-# R: Gary Lin <gary.lin@hpe.com> [lcp]
+# R: Gary Lin <glin@suse.com> [lcp]
 /OvmfPkg/LsiScsiDxe/**   @kraxel @lcp
 
 # OvmfPkg: TCG- and TPM2-related modules
@@ -748,10 +750,10 @@
 /OvmfPkg/XenPvBlkDxe/**                                @kraxel @tperard
 /OvmfPkg/XenResetVector/**                             @kraxel @tperard
 
-#
-# Files common to TCG and XEN
-#
+# OvmfPkg: Files common to Byhve AND XEN
 /OvmfPkg/Library/PciHostBridgeLibScan/**               @kraxel @bcran @corvink @tperard
+
+# OvmfPkg: Files common to TCG and XEN
 /OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c  @kraxel @elmarco @tperard
 
 # OvmfPkg: RISC-V Qemu Virt Platform
